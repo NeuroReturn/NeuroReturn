@@ -1,0 +1,31 @@
+version: 0.1.0
+meta:
+  updated_at: '2025-09-07'
+components:
+  validators:
+    frontmatter:
+    - jsonschema
+    yaml:
+    - yamllint
+    tpma:
+    - csv_header_check
+    - row_count_check
+    - no_empty_cells
+  protocols:
+  - 08-agents/KAIROS/ci_protocols/validation_ci.yaml
+  - 08-agents/KAIROS/ci_protocols/returnscore_eval.yaml
+  - 08-agents/KAIROS/ci_protocols/tpma_integrity.yaml
+  - 08-agents/KAIROS/ci_protocols/adjust_protocol.yaml
+  - 08-agents/KAIROS/ci_protocols/glossary_match.yaml
+  data:
+    glossary_auto: 08-agents/KAIROS/glossary/auto/
+    glossary_curated: 08-agents/KAIROS/glossary/curated/
+constraints:
+  allowed_file_extensions:
+  - .md
+  - .yaml
+  - .yml
+  - .json
+  - .jsonl
+  - .csv
+  max_path_length: 220

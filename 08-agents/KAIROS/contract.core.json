@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+  "project": "NeuroReturn™",
+  "agent": "KAIROS",
+  "meta": {
+    "updated_at": "2025-09-07",
+    "immutable": true,
+    "repo_path": "08-agents/KAIROS/contract.core.json"
+  },
+  "canon_structure": {
+    "root": "08-agents/KAIROS/",
+    "core_files": [
+      "contract.core.json",
+      "contract.full.json",
+      "README.md",
+      "identity.yaml",
+      "voice.md",
+      "tpma_ref.yaml",
+      "stackmap.yaml",
+      "authority_matrix.yaml",
+      "safety_gate.yaml",
+      "activation.yaml",
+      "routing_rules.yaml",
+      "state_machine.yaml"
+    ],
+    "ci_protocols": [
+      "ci_protocols/validation_ci.yaml",
+      "ci_protocols/returnscore_eval.yaml",
+      "ci_protocols/tpma_integrity.yaml",
+      "ci_protocols/adjust_protocol.yaml",
+      "ci_protocols/glossary_match.yaml"
+    ],
+    "observability": [
+      "observability/logs/state_trace.yaml",
+      "observability/logs/audit_registry.md",
+      "observability/logs/adjust_layer.yaml",
+      "observability/logs/symbol_trace.yaml"
+    ]
+  },
+  "enforcement": {
+    "tpma_trace_required": true,
+    "returnscore_checkpoints": [
+      "ΔHRV",
+      "ΔPSS",
+      "ΔCogPerf",
+      "Adherence"
+    ],
+    "glossary_autogen_allowed": true,
+    "glossary_autogen_rules": "glossary/fallback_gen.md",
+    "adjust_required": true,
+    "explicit_validation_required": true
+  }
+}

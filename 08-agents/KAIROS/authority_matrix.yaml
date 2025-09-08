@@ -1,0 +1,36 @@
+version: 0.3.0
+meta:
+  id: authority_matrix_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: 2025-09-08
+  repo_path: 08-agents/KAIROS/authority_matrix.yaml
+
+roles: [User, KAIROS, ARKHIVAR]
+
+decision_table:
+  - when: "risk_score >= 0.8"
+    winner: ARKHIVAR
+    rationale: "safety_block"
+  - when: "phase in [F0,F1] and risk_score >= 0.7"
+    winner: ARKHIVAR
+    rationale: "early_phase_risk_override"
+  - when: "ci_result == fail"
+    winner: KAIROS
+    rationale: "ci_failure_requires_engineering_fix"
+  - when: "phase in [F2,F3] and ci_result == pass"
+    winner: User
+    rationale: "stable_and_passing_ci"
+  - else: KAIROS
+
+tie_breakers:
+  priority: [ARKHIVAR, KAIROS, User]
+  notes:
+    - "При равенстве условий побеждает более консервативный субъект"
+
+approvals:
+  required_for_F3: 1
+  approver_roles: [Owner, Safety, CI]
+
+audit:
+  log_decisions_to: "08-agents/KAIROS/observability/logs/audit_registry.md"
+  include_fields: [phase, risk_score, ci_result, final_authority, notes]

@@ -1,0 +1,35 @@
+version: 0.1.0
+meta:
+  updated_at: '2025-09-07'
+phases:
+  F0:
+    tpma_sources:
+    - 200_Phases/F0/TPMA_*.csv
+    - 08-agents/KAIROS/**/TPMA_*.csv
+  F1:
+    tpma_sources:
+    - 200_Phases/F1/TPMA_*.csv
+    - 08-agents/KAIROS/**/TPMA_*.csv
+  F2:
+    tpma_sources:
+    - 200_Phases/F2/TPMA_*.csv
+    - 08-agents/KAIROS/**/TPMA_*.csv
+  F3:
+    tpma_sources:
+    - 200_Phases/F3/TPMA_*.csv
+    - 08-agents/KAIROS/**/TPMA_*.csv
+schema:
+  header_exact:
+  - Phase
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  - Frequency
+  - Window
+  - Owner
+  - Notes
+  min_rows: 3
+  no_empty_cells: true
+  charset: utf-8

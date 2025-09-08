@@ -1,0 +1,441 @@
+version: 1
+paths:
+  docs_root: .
+  ci_dir: ci
+  schemas_dir: schemas
+  source_chat_file: 00_INBOX_RaW_Чат.md
+  authorities:
+  - NR_120_System-Constitution_IMMUTABLE.md
+  - NR_000_Core-Meaning.md
+  - NR_100_Engineering-Core.md
+  - 00_INBOX_RaW_Чат.md
+waivers:
+  enabled: true
+  registry_file: ci/waivers.yaml
+  require_expiry_days: 14
+observability:
+  audit_log_fields:
+  - timestamp
+  - user_id_pseudo
+  - mode
+  - phase
+  - tpma_flags
+  - safety_flags
+  - artifacts_refs
+  - citations
+  audit_schema_file: schemas/audit_log.schema.json
+profiles:
+  active: dev
+  severity_matrix:
+    dev:
+      citations: warn
+      safety_content: fail
+      phase_tpma: warn
+      links: fail
+      frontmatter: fail
+      tpma: fail
+      secrets: fail
+    prod:
+      citations: fail
+      safety_content: fail
+      phase_tpma: fail
+      links: fail
+      frontmatter: fail
+      tpma: fail
+      secrets: fail
+normalization:
+  encoding: utf-8
+  line_endings: LF
+  strip_bom: true
+  replace_tabs: true
+frontmatter:
+  required: true
+  schema_file: schemas/frontmatter.schema.json
+  required_fields:
+  - id
+  - project
+  - title
+  - version
+  - category
+  - type
+  - phase
+  - status
+  - confidentiality
+  - source
+  - created_at
+citations:
+  required: true
+  coverage_min: 0.95
+  pattern: \[([^:\]]+\.md):L\d+-L\d+\]
+  prefer_authorities: true
+  min_authority_ratio: 0.7
+  categories:
+    strict:
+    - policy
+    - spec
+    - rfc
+    relaxed:
+    - note
+    - journal
+tpma:
+  file_globs:
+  - 200_Phases/**/NR_210_*.csv
+  - 200_Phases/**/TPMA_*.csv
+  - '**/TPMA/*.csv'
+  header_exact:
+  - Phase
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  - Frequency
+  - Window
+  - Owner
+  - Notes
+  min_rows: 3
+  no_empty_cells: true
+  charset: utf-8
+links:
+  check_upstream: true
+  check_downstream: true
+  check_linked_to: true
+  require_existing_targets: true
+  upstream_field_names:
+  - Upstream
+  - upstream
+  - references
+  downstream_field_names:
+  - Downstream
+  - downstream
+  wiki_link_patterns:
+  - \[\[(.+?)\]\]
+  - \(([^\)]+\.md)\)
+  - \(([^\)]+\.MD)\)
+  ignore_patterns:
+  - ^https?://
+  - '^mailto:'
+secrets:
+  gitleaks_enabled: true
+  mask_prefix: FAKE_
+  patterns:
+  - AKIA[0-9A-Z]{16}
+  - AIza[0-9A-Za-z\-_]{35}
+  - sk-[0-9A-Za-z]{20,}
+guards:
+  safety_first_override: true
+  returnscore_guard: true
+  thresholds:
+    risk_override: 0.7
+    risk_block: 0.8
+    score_min_pass: 0.6
+  enforce:
+  - rule: returnscore_presence_in_phase
+    require: true
+  - rule: policy_runtime_parity
+    require: true
+safety_content:
+  file_globs:
+  - 04-safety/NR_620_Safety-Gates.md
+  - 04-safety/NR_622_AE-Definitions_Grading.md
+  - 04-safety/NR_623_Safety-Stop_Escalation-Rules.md
+  - 04-safety/NR_730_Triage-Matrix.md
+  - 04-safety/NR_332_Adverse-Events_SOP.md
+  patterns:
+    heading_stop: ^(#+\s*)(STOP|Stop|Stop Conditions|СТОП|Стоп)
+    heading_escalation: ^(#+\s*)(Escalation|Escalation Tree|Эскалация)
+    heading_sla: ^(#+\s*)(SLA|Service Level|Response Time|Время реакции|SLA/Время
+      реакции)
+  require_cross_doc_ids:
+  - NR_620_Safety-Gates
+  - NR_622_AE-Definitions_Grading
+  - NR_623_Safety-Stop_Escalation-Rules
+  - NR_730_Triage-Matrix
+  - NR_332_Adverse-Events_SOP
+  fail_if_missing: true
+phase_tpma:
+  file_globs:
+  - 200_Phases/**/NR_210_*
+  - 200_Phases/**/Phase*
+  - 08-agents/KAIROS/**/Phase*
+  require_terms:
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  require_cross_doc_ids_any_of:
+  - NR_400_Data-Dictionary
+  - NR_410_Analytics-Rules
+  require_returnscore_mention: true
+  returnscore_patterns:
+  - \bReturnScore\b
+  - \bAnalytics Rules\b
+  - \bReturn Score\b
+  fail_if_missing: true
+glossary:
+  autogen_rules_file: glossary/glossary_autogen_rules.yaml
+  freeze_on:
+  - prod
+  require_matches: true
+  required_coverage: 0.8
+data_quality:
+  refs:
+  - NR_100_Engineering-Core.md
+  hrv_min_clean_rr: 0.8
+  morning_hrv_window_min: 5
+runtime:
+  meta:
+    id: kairos_runtime_behavior_v1
+    version: 1.1.0
+    title: CI Runtime Behavior for Agent KAIROS
+    status: draft
+    owner: NeuroReturn™ Engineering
+    created_at: '2025-09-04'
+    updated_at: '2025-09-04'
+    repo_path: 08-agents/KAIROS/ci_runtime_behavior.yaml
+    approvals_required: 1
+    immutable_fields:
+    - agent_id
+    agent_id: KAIROS
+  execution_modes:
+  - Facilitator:
+      stateful: false
+      input_types:
+      - natural_language
+      entry_points:
+      - chat
+      - console
+      control: user
+      logging: false
+      purpose: Диалоговое фасилитирование без CI-состояния
+  - CI-Inspector:
+      stateful: true
+      input_types:
+      - yaml
+      - json
+      - markdown
+      entry_points:
+      - pipeline
+      - ARKHIVAR
+      - activation_triggers
+      control:
+      - KAIROS
+      - ARKHIVAR
+      - user
+      logging: true
+      purpose: CI-валидация, исполнение TPMA, трассировка
+  lifecycle:
+  - id: receive_input
+    description: Принять вход (chat/API/pipeline)
+    outputs:
+    - raw_input
+    - context_ref
+  - id: classify_intent
+    description: Классифицировать намерение
+    rules:
+      intents:
+      - validate
+      - adjust
+      - generate
+      - trace
+      - consult
+      detector: routing_rules.yaml
+    outputs:
+    - intent
+  - id: select_mode
+    description: Выбор режима исполнителя по intent + state
+    mapping:
+      validate|trace: CI-Inspector
+      adjust: CI-Inspector
+      generate|consult: Facilitator
+    outputs:
+    - mode
+  - id: fetch_contracts
+    description: Загрузить контракты и политики
+    sources:
+    - contract.full.json
+    - authority_matrix.yaml
+    - governance/execution_policy.yaml
+    - state_machine.yaml
+    - stackmap.yaml
+    outputs:
+    - contracts_loaded
+  - id: run_ci_validation
+    description: Запустить CI-протоколы по фазе/контексту
+    protocols:
+    - ci_protocols/tpma_integrity.yaml
+    - ci_protocols/returnscore_eval.yaml
+    - ci_protocols/validation_ci.yaml
+    - ci_protocols/adjust_protocol.yaml
+    - ci_protocols/glossary_match.yaml
+    outputs:
+    - ci_result
+    - warnings
+  - id: arbitration
+    description: Арбитраж полномочий (KAIROS/User/ARKHIVAR)
+    policy_ref: authority_matrix.yaml
+    rules:
+    - when: phase in [F0, F1] and risk_score > guards.thresholds.risk_override
+      action: ARKHIVAR overrides user
+    - when: else
+      action: consensus_or_manual_override
+    outputs:
+    - final_authority
+  - id: respond
+    description: Сформировать ответ
+    format: markdown
+    may_embed: yaml
+    outputs:
+    - response
+  - id: log_trace
+    description: Записать трассу/аудит
+    sinks:
+    - observability/logs/state_trace.yaml
+    - observability/logs/audit_registry.md
+    - observability/logs/adjust_layer.yaml
+    - observability/logs/symbol_trace.yaml
+    schema_ref: trace_schema
+  - id: update_state
+    description: Обновить состояние агента
+    updates:
+    - phase
+    - tpma_linked
+    - adjust_applied
+    - ci_result
+  io_formats:
+    supported:
+    - natural_language
+    - markdown
+    - yaml
+    - embedded_yaml
+    - json
+    default_response_format: markdown
+    autodetect_rules:
+    - if: code fence starts with yaml or json
+      then:
+        parse_as: structured
+    - if: frontmatter 'id' or 'Phase' present
+      then:
+        parse_as: structured
+    - if: pure NL
+      then:
+        offer: NL→YAML when intent in [validate, adjust, trace]
+  triggers:
+  - type: manual
+    when: dev invokes CI
+    source: debug_modes/dev_mode.md
+  - type: auto_on_change
+    when: phase/stack/glossary/state updated
+    source: routing_rules.yaml
+  - type: scheduled
+    when: nightly integrity sweep
+    source: pipelines/validation_ci.yaml
+  fallback:
+  - case: invalid_yaml
+    detect: schema validator fails
+    action:
+    - autocorrect_yaml: true
+    - if_fail: return_patch_with_diffs
+    - degrade_response_level: advisory
+  - case: missing_term
+    detect: glossary_match → miss
+    action:
+    - trigger: glossary/auto/fallback_gen.md
+    - add_to: glossary/auto/fallback_terms.yaml
+    - require_review: true
+  - case: tpma_incomplete
+    detect: tpma_integrity → missing [Trigger|Protocol|Measure|Adjust]
+    action:
+    - request_minimal_viable_patch: true
+    - lock_phase_transition: true
+    - escalate_if: phase in [F0, F1] and risk_score > guards.thresholds.risk_block
+  - case: adjust_null
+    detect: adjust == null
+    action:
+    - run: ci_protocols/adjust_protocol.yaml
+    - if_persist:
+        escalate_to: ARKHIVAR
+  authority:
+    rules:
+    - when: risk_score >= thresholds.risk_block
+      winner: ARKHIVAR
+    - when: phase in [F0, F1] and risk_score >= thresholds.risk_override
+      winner: ARKHIVAR
+    - when: phase in [F2, F3] and ci_result == pass
+      winner: User
+    - when: ci_result == fail
+      winner: KAIROS
+    - when: conflict and ci_result in [warn, fail]
+      winner: KAIROS
+    - else: consensus
+  trace_schema:
+    file: schemas/trace_log.schema.json
+    entry:
+      uid: string
+      run_id: string
+      agent_id: string
+      ts_start: iso8601
+      ts_end: iso8601
+      request_id: string
+      intent:
+      - validate
+      - adjust
+      - generate
+      - trace
+      - consult
+      mode:
+      - Facilitator
+      - CI-Inspector
+      phase_in:
+      - F0
+      - F1
+      - F2
+      - F3
+      phase_out:
+      - F0
+      - F1
+      - F2
+      - F3
+      tpma_linked: string
+      ci_tests_run:
+      - string
+      ci_result:
+      - pass
+      - warn
+      - fail
+      risk_score: number
+      final_authority:
+      - User
+      - KAIROS
+      - ARKHIVAR
+      adjust_applied: boolean
+      notes: string
+  logging:
+    KAIROS:
+      logs:
+      - observability/logs/adjust_layer.yaml
+      - observability/logs/symbol_trace.yaml
+    ARKHIVAR:
+      logs:
+      - observability/logs/audit_registry.md
+      - observability/logs/state_trace.yaml
+  links:
+    core:
+    - 08-agents/KAIROS/contract.full.json
+    - 08-agents/KAIROS/state_machine.yaml
+    - 08-agents/KAIROS/activation.yaml
+    - 08-agents/KAIROS/ci_protocols/
+    - 08-agents/KAIROS/observability/
+    - 08-agents/KAIROS/stackmap.yaml
+    - 08-agents/KAIROS/authority_matrix.yaml
+    - 08-agents/KAIROS/debug_modes/
+    - 08-agents/KAIROS/governance/version_contract.yaml
+    optional:
+    - 08-agents/KAIROS/routing_rules.yaml
+    - 08-agents/KAIROS/ci_protocols/glossary_match.yaml
+    - 08-agents/KAIROS/safety_gate.yaml
+  thresholds:
+    risk_override: 0.7
+    risk_block: 0.8
+    score_min_pass: 0.6

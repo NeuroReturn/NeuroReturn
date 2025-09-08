@@ -1,0 +1,43 @@
+# .pre-commit-config.yaml — минимальный набор без внешних зависимостей
+# Разместить в 08-agents/KAIROS/.pre-commit-config.yaml
+minimum_pre_commit_version: "2.20.0"
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-merge-conflict
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: pretty-format-json
+        args: [--autofix, --no-ensure-ascii, --indent, "2"]
+
+  # Скан секретов без baseline
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        args: ["protect", "--staged", "--redact"]
+
+  # Локальные хуки для проверок KAIROS
+  - repo: local
+    hooks:
+      - id: fm-validate
+        name: frontmatter validate (fixtures)
+        entry: python3 scripts/nr_fm.py tests/fixtures/frontmatter
+        language: system
+        pass_filenames: false
+        files: ^(tests/fixtures/frontmatter/|schemas/frontmatter\.schema\.json|scripts/nr_fm\.py)
+
+      - id: json-schema-check
+        name: json schema check (frontmatter)
+        entry: python3 scripts/json_schema_check.py schemas/frontmatter.schema.json
+        language: system
+        pass_filenames: false
+        files: ^schemas/frontmatter\.schema\.json$

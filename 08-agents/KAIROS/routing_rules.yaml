@@ -1,0 +1,152 @@
+version: 0.4.0
+meta:
+  id: routing_rules_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/routing_rules.yaml
+evaluation_order:
+- system_commands
+- preflight_safety
+- intent_resolution
+- route_by_intent
+- conflict_resolution
+system_commands:
+- id: cmd_dev
+  match:
+    regex: ^/(dev|trace)\b
+  effect:
+    set:
+      mode: CI-Inspector
+      phase: F0
+      flags:
+      - DEV
+      - TRACE
+  route:
+    run:
+    - ci_protocols/validation_ci.yaml
+    respond: summary_only
+- id: cmd_validate
+  match:
+    regex: ^/(validate|ci)\b
+  effect:
+    set:
+      mode: CI-Inspector
+  route:
+    run:
+    - ci_protocols/validation_ci.yaml
+    respond: summary_only
+- id: cmd_returnscore
+  match:
+    regex: ^/(rs|returnscore)\b
+  effect:
+    set:
+      mode: CI-Inspector
+  route:
+    run:
+    - ci_protocols/returnscore_eval.yaml
+    respond: score_and_grade
+preflight_safety:
+  safety_gate: 08-agents/KAIROS/safety_gate.yaml
+  checks:
+  - id: secret_leak
+    detect:
+      regex_any:
+      - AKIA[0-9A-Z]{16}
+      - AIza[0-9A-Za-z\-_]{35}
+      - sk-[0-9A-Za-z]{20,}
+    action:
+      block: true
+      set_phase: F0
+      escalate_to: ARKHIVAR
+  - id: returnscore_low
+    when:
+      metric:
+        ReturnScore:
+          <: 0.6
+    action:
+      block: true
+      set_phase: F0
+      run:
+      - ci_protocols/returnscore_eval.yaml
+  - id: risk_block
+    when:
+      metric:
+        risk_score:
+          '>=': 0.8
+    action:
+      block: true
+      escalate_to: ARKHIVAR
+      set_phase: F0
+intent_resolution:
+  resolver: workflows/intent_resolver.yaml
+  fallback:
+    intent: consult
+    confidence: 0.55
+route_by_intent:
+- intent: validate
+  mode: CI-Inspector
+  pipeline:
+  - ci_protocols/validation_ci.yaml
+  post:
+    on_fail:
+      respond: advisory_patch
+      authority: KAIROS
+    on_warn:
+      respond: with_warnings
+    on_pass:
+      respond: normal
+- intent: trace
+  mode: CI-Inspector
+  pipeline:
+  - ci_protocols/validation_ci.yaml
+  post:
+    respond: diagnostic_detail
+- intent: adjust
+  mode: CI-Inspector
+  pipeline:
+  - ci_protocols/adjust_protocol.yaml
+  - ci_protocols/validation_ci.yaml
+  post:
+    on_fail:
+      respond: advisory_patch
+      authority: KAIROS
+    default:
+      respond: patch_summary
+- intent: consult
+  mode: Facilitator
+  pre:
+    fast_safety_scan: true
+  post:
+    if_risk_ge:
+      '0.8':
+        respond: advisory
+        authority: ARKHIVAR
+    default:
+      respond: normal
+- intent: generate
+  mode: Facilitator
+  pre:
+    require_persona_alignment: governance/persona_alignment.yaml
+    frontmatter_required_if_category_in:
+    - policy
+    - spec
+    - rfc
+  post:
+    respond: normal
+conflict_resolution:
+  precedence:
+  - system_commands
+  - preflight_safety
+  - validate
+  - adjust
+  - trace
+  - consult
+  - generate
+  tie_breaker: highest_confidence
+  mode_bias:
+    prefer: CI-Inspector
+    if:
+      safety: true
+  logging:
+    trace: observability/logs/state_trace.yaml
+    audit: observability/logs/audit_registry.md

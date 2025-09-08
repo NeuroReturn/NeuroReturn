@@ -1,0 +1,120 @@
+version: 0.2.0
+phases:
+- F0
+- F1
+- F2
+- F3
+triggers:
+- id: dev_mode_toggle
+  source: debug_modes/dev_mode.md
+  when:
+    any:
+    - input.regex: ^/dev(?:\s|$)
+    - context.flag: DEV_MODE
+  effect:
+    set.mode: CI-Inspector
+    set.phase: F0
+    set.flags:
+    - DEV
+    - TRACE
+    reason: manual developer override
+- id: nightly_integrity
+  source: pipelines/validation_ci.yaml
+  when:
+    schedule: 0 3 * * *
+  effect:
+    run.pipeline: pipelines/validation_ci.yaml
+    set.mode: CI-Inspector
+- id: tpma_changed
+  source: ci_protocols/tpma_integrity.yaml
+  when:
+    any:
+    - repo.changed: 200_Phases/**/TPMA_*.csv
+    - repo.changed: 200_Phases/**/NR_210_*.csv
+  effect:
+    set.mode: CI-Inspector
+    run.protocols:
+    - ci_protocols/tpma_integrity.yaml
+    reason: TPMA artifacts modified
+- id: glossary_autogen_needed
+  source: ci_protocols/glossary_match.yaml
+  when:
+    any:
+    - event.type: glossary_miss
+  effect:
+    set.mode: CI-Inspector
+    run.protocols:
+    - ci_protocols/glossary_match.yaml
+    add.to: glossary/auto/fallback_terms.yaml
+    require.review: true
+    reason: glossary miss requires autogen
+- id: safety_event_high
+  source: safety_gate.yaml
+  when:
+    all:
+    - event.type: safety_event
+    - event.severity_in:
+      - high
+      - critical
+  effect:
+    set.phase: F0
+    set.authority: ARKHIVAR
+    set.flags:
+    - TRACE
+    run.protocols:
+    - ci_protocols/adjust_protocol.yaml
+    reason: High/critical safety event
+- id: returnscore_drop
+  source: ci_protocols/returnscore_eval.yaml
+  when:
+    all:
+    - metric.lt:
+        name: ReturnScore
+        value_ref: guards.thresholds.score_min_pass
+  effect:
+    set.phase: F0
+    set.mode: CI-Inspector
+    run.protocols:
+    - ci_protocols/returnscore_eval.yaml
+    reason: ReturnScore below threshold
+- id: promote_on_green
+  source: ci_protocols/validation_ci.yaml
+  when:
+    all:
+    - ci_result: pass
+    - risk_score.lt: 0.7
+    - phase.is: F0
+  effect:
+    set.phase: F1
+    reason: promotion from F0 to F1 on green CI
+guards:
+- id: safety_first_override
+  when: risk_score >= guards.thresholds.risk_override
+  effect:
+    set.authority: ARKHIVAR
+    block.transition: true
+- id: block_promotion_without_safety_docs
+  when:
+    all:
+    - phase.target_in:
+      - F2
+      - F3
+    - docs.required_missing_any_of:
+      - NR_620_Safety-Gates
+      - NR_622_AE-Definitions_Grading
+      - NR_623_Safety-Stop_Escalation-Rules
+      - NR_730_Triage-Matrix
+      - NR_332_Adverse-Events_SOP
+  effect:
+    block.transition: true
+    require.review: true
+    reason: Missing mandatory safety docs for higher phases
+- id: prevent_prod_without_approval
+  when:
+    all:
+    - phase.target: F3
+    - approvals.count.lt: 1
+  effect:
+    block.transition: true
+    require.review: true
+    reason: At least one approval required for Prod

@@ -1,0 +1,65 @@
+version: 0.2.0
+meta:
+  id: safety_gate_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+thresholds:
+  risk_override: 0.7
+  risk_block: 0.8
+  returnscore_min: 0.6
+gates:
+- id: returnscore_drop
+  when:
+    metric:
+      ReturnScore:
+        <: 0.6
+  action:
+    set_phase: F0
+    set_authority: ARKHIVAR
+    run_protocols:
+    - ci_protocols/returnscore_eval.yaml
+    log: observability/logs/state_trace.yaml
+- id: secret_leak
+  detect:
+    regex_any:
+    - AKIA[0-9A-Z]{16}
+    - AIza[0-9A-Za-z\-_]{35}
+    - sk-[0-9A-Za-z]{20,}
+  action:
+    block: true
+    escalate: ARKHIVAR
+    set_phase: F0
+- id: safety_docs_required_for_F2F3
+  when:
+    target_phase_in:
+    - F2
+    - F3
+  require_docs_any_of:
+  - NR_620_Safety-Gates
+  - NR_622_AE-Definitions_Grading
+  - NR_623_Safety-Stop_Escalation-Rules
+  - NR_730_Triage-Matrix
+  - NR_332_Adverse-Events_SOP
+  action:
+    block: true
+    require_review: true
+- id: content_stop_headings
+  detect:
+    heading_any:
+    - STOP
+    - Stop Conditions
+    - СТОП
+    - Эскалация
+    - SLA
+    - Время реакции
+  action:
+    require_review: true
+escalation:
+- if:
+    safety_event.severity: critical
+  to: ARKHIVAR
+  sla_min: 0
+- if:
+    safety_event.severity: high
+  to: KAIROS
+  sla_min: 5
