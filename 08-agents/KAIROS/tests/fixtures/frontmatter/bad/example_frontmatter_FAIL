@@ -1,0 +1,13 @@
+{
+  "id": "NR-XY-F2-WrongCategory",
+  "project": "NeuroReturn",
+  "title": "Should Fail Example",
+  "version": "0.0.1",
+  "category": "policy",
+  "type": "spec",
+  "phase": "F2",
+  "status": "draft",
+  "confidentiality": "public",
+  "source": "chat",
+  "created_at": "2025-08-31"
+}
