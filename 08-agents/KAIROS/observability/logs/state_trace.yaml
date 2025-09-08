@@ -1,0 +1,22 @@
+version: 0.2.0
+schema: schemas/trace_log.schema.json
+entries:
+- uid: trace_0001
+  run_id: run_2025_09_07T03_00_00Z
+  agent_id: KAIROS
+  ts_start: '2025-09-07T14:19:30Z'
+  ts_end: '2025-09-07T14:19:30Z'
+  request_id: req_demo
+  intent: validate
+  mode: CI-Inspector
+  phase_in: F1
+  phase_out: F1
+  tpma_linked: TPMA_F1_2025W36
+  ci_tests_run:
+  - ci_protocols/validation_ci.yaml
+  - ci_protocols/tpma_integrity.yaml
+  ci_result: pass
+  risk_score: 0.12
+  final_authority: User
+  adjust_applied: false
+  notes: demo entry

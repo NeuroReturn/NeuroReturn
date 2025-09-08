@@ -1,0 +1,25 @@
+version: 0.2.0
+entry_schema:
+  uid: string
+  run_id: string
+  agent_id: KAIROS
+  ts: iso8601
+  terms:
+  - source: string
+    normalized: string
+    layer: lex|sem|policy
+    confidence: 0..1
+entries:
+- uid: sym_0001
+  run_id: run_2025_09_07T03_00_00Z
+  agent_id: KAIROS
+  ts: '2025-09-07T14:19:30Z'
+  terms:
+  - source: Return Score
+    normalized: ReturnScore
+    layer: lex
+    confidence: 0.98
+  - source: TPMA
+    normalized: TPMA
+    layer: lex
+    confidence: 0.99
