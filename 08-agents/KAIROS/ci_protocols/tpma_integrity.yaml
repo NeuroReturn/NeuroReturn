@@ -1,0 +1,49 @@
+version: 0.3.0
+meta:
+  id: tpma_integrity_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/ci_protocols/tpma_integrity.yaml
+sources:
+  ref: 08-agents/KAIROS/tpma_ref.yaml
+csv_schema:
+  header_exact:
+  - Phase
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  - Frequency
+  - Window
+  - Owner
+  - Notes
+  min_rows: 3
+  no_empty_cells: true
+  charset: utf-8
+phase_rules:
+  allowed_phases:
+  - F0
+  - F1
+  - F2
+  - F3
+  require_terms:
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  require_returnscore_mention: true
+  returnscore_patterns:
+  - \bReturnScore\b
+  - \bAnalytics Rules\b
+  - \bReturn Score\b
+cross_refs:
+  safety_gate_file: 08-agents/KAIROS/safety_gate.yaml
+  check_safety_gate_ids: true
+outcome:
+  on_missing_header: fail
+  on_empty_cells: fail
+  on_bad_phase: fail
+  on_missing_terms: warn
+  on_missing_returnscore: warn

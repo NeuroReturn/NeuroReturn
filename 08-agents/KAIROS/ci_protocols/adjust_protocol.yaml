@@ -1,0 +1,39 @@
+version: 0.3.0
+meta:
+  id: adjust_protocol_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/ci_protocols/adjust_protocol.yaml
+triggers:
+  missing_adjust:
+    detect:
+      field_equals:
+        Adjust: null
+  explicit_request:
+    detect:
+      input_regex: (?i)apply\s+adjust|adjust\s+protocol
+  safety_required:
+    detect:
+      any_regex:
+      - STOP
+      - Эскалация
+actions:
+  apply_default:
+    set:
+      Adjust: Minimal
+    log_to: 08-agents/KAIROS/observability/logs/adjust_layer.yaml
+  escalate_arkhivar:
+    escalate_to: ARKHIVAR
+policy:
+- id: if_missing_then_minimal
+  when: triggers.missing_adjust
+  do:
+  - apply_default
+- id: if_safety_then_escalate
+  when: triggers.safety_required
+  do:
+  - escalate_arkhivar
+outcome:
+  log_all: true
+  require_review_if:
+  - escalate_arkhivar

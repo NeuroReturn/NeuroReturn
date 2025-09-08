@@ -1,0 +1,28 @@
+version: 0.3.0
+meta:
+  id: glossary_match_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/ci_protocols/glossary_match.yaml
+autogen_rules_file: 08-agents/KAIROS/glossary/glossary_autogen_rules.yaml
+freeze_on:
+- prod
+require_matches: true
+required_coverage: 0.8
+prefer_authorities: true
+min_authority_ratio: 0.7
+sources:
+  auto_dir: 08-agents/KAIROS/glossary/auto/
+  curated_dir: 08-agents/KAIROS/glossary/curated/
+categories:
+  strict:
+  - policy
+  - spec
+  - rfc
+  relaxed:
+  - note
+  - journal
+outcome:
+  min_coverage_pass: 0.8
+  warn_below: 0.7
+  fail_below: 0.5

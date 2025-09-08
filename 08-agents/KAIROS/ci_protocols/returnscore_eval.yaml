@@ -1,0 +1,60 @@
+version: 0.3.0
+meta:
+  id: returnscore_eval_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/ci_protocols/returnscore_eval.yaml
+signals:
+  adherence:
+    source: behavior.logs
+    range:
+    - 0
+    - 1
+  delta_cogperf:
+    source: cognitive.metrics
+    range:
+    - -1
+    - 1
+    normalize: tanh
+  latency:
+    source: runtime.metrics.ms
+    invert: true
+    p95_cap_ms: 3000
+  uptime:
+    source: service.metrics
+    range:
+    - 0
+    - 1
+weights:
+  adherence: 0.35
+  delta_cogperf: 0.25
+  latency: 0.2
+  uptime: 0.2
+normalization:
+  latency:
+    method: minmax_inv
+    min_ms: 300
+    max_ms: 3000
+  delta_cogperf:
+    method: tanh
+    scale: 1.0
+data_quality:
+  refs:
+  - NR_100_Engineering-Core.md
+  hrv_min_clean_rr: 0.8
+  morning_hrv_window_min: 5
+thresholds:
+  pass_min: 0.6
+  warn_min: 0.45
+aggregation:
+  formula: sum_i ( weight[i] * norm(signal[i]) )
+  clip:
+  - 0
+  - 1
+outcome_map:
+- if: score >= pass_min
+  result: pass
+- if: score < pass_min and score >= warn_min
+  result: warn
+- if: score < warn_min
+  result: fail
