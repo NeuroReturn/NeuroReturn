@@ -1,0 +1,105 @@
+version: 0.3.0
+meta:
+  id: reflex_map_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/workflows/reflex_map.yaml
+evaluation_order:
+- system_commands
+- validation_shortcuts
+- safety_triggers
+- glossary_triggers
+- tpma_triggers
+- debug_triggers
+defaults:
+  cooldown_sec: 0
+reflexes:
+- id: cmd_dev
+  group: system_commands
+  match:
+    regex_any:
+    - ^/dev(\s|$)
+    - ^/trace(\s|$)
+  when:
+    phase_in:
+    - F0
+    - F1
+    - F2
+    - F3
+  effect:
+    set:
+      mode: CI-Inspector
+      flags:
+      - DEV
+      - TRACE
+      phase: F0
+    log: observability/logs/state_trace.yaml
+  cooldown_sec: 0
+  notes: Режим разработки с трассировкой.
+- id: cmd_validate
+  group: validation_shortcuts
+  match:
+    regex_any:
+    - ^/validate(\s|$)
+    - ^/ci(\s|$)
+  effect:
+    run:
+    - ci_protocols/validation_ci.yaml
+    respond: summary_only
+  cooldown_sec: 0
+- id: cmd_returnscore
+  group: validation_shortcuts
+  match:
+    regex_any:
+    - ^/rs(\s|$)
+    - ^/returnscore(\s|$)
+  effect:
+    run:
+    - ci_protocols/returnscore_eval.yaml
+    respond: score_and_grade
+- id: safety_words
+  group: safety_triggers
+  match:
+    regex_any:
+    - \b(паника|panic|суицид|overdose|кризис)\b
+    - \bSTOP\b
+  effect:
+    run:
+    - ci_protocols/validation_ci.yaml
+    set:
+      mode: CI-Inspector
+    escalate_if:
+      risk_score:
+        '>=': 0.8
+      to: ARKHIVAR
+  notes: Активирует safety-проверки по ключевым словам.
+- id: glossary_gap
+  group: glossary_triggers
+  match:
+    regex_any:
+    - \bdefine\b
+    - \bопредели\b
+    - \bчто такое\b
+  effect:
+    run:
+    - ci_protocols/glossary_match.yaml
+    respond: term_definition_first
+    write_to: glossary/auto/
+- id: tpma_hint
+  group: tpma_triggers
+  match:
+    regex_any:
+    - \bTPMA\b
+    - \bPhase\s*F[0-3]\b
+  effect:
+    run:
+    - ci_protocols/tpma_integrity.yaml
+    respond: tpma_status
+- id: dbg_flags
+  group: debug_triggers
+  match:
+    regex_any:
+    - ^/flags(\s|$)
+  effect:
+    respond: dump_flags
+    log: observability/logs/state_trace.yaml

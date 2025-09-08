@@ -1,0 +1,90 @@
+version: 0.3.0
+meta:
+  id: intent_resolver_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/workflows/intent_resolver.yaml
+evaluation_order:
+- command_prefix
+- structured_input
+- keywords
+- contextual
+- fallback
+intents:
+- validate
+- adjust
+- generate
+- trace
+- consult
+precedence:
+- validate
+- adjust
+- trace
+- consult
+- generate
+rules:
+- id: cmd_mapped
+  stage: command_prefix
+  when:
+    regex: ^/(validate|ci|trace|dev|adjust|consult)\b
+  map:
+    validate: validate
+    ci: validate
+    trace: trace
+    dev: trace
+    adjust: adjust
+    consult: consult
+  confidence: 0.95
+- id: structured_yaml_or_json
+  stage: structured_input
+  when:
+    any:
+    - codeblock_lang_in:
+      - yaml
+      - yml
+      - json
+    - frontmatter_present: true
+  intent: validate
+  confidence: 0.9
+- id: keyword_adjust
+  stage: keywords
+  when:
+    regex: (?i)\bapply\s+adjust\b|adjust\s+protocol\b|обнови\s+adjust\b
+  intent: adjust
+  confidence: 0.8
+- id: keyword_trace
+  stage: keywords
+  when:
+    regex: (?i)\btrace\b|трассируй|разбор\b
+  intent: trace
+  confidence: 0.75
+- id: context_validate
+  stage: contextual
+  when:
+    any:
+    - mentions:
+      - TPMA
+      - Phase
+      - SafetyGate
+      - ReturnScore
+    - file_ext_in:
+      - .yaml
+      - .yml
+      - .json
+      - .csv
+      - .md
+  intent: validate
+  confidence: 0.7
+- id: fallback_consult_or_generate
+  stage: fallback
+  when:
+    any:
+    - is_question: true
+    - length_tokens_lt: 80
+  intent: consult
+  alt: generate
+  confidence: 0.55
+decision:
+  min_confidence: 0.5
+  tie_breaker: precedence
+  emit_alternates: 1
