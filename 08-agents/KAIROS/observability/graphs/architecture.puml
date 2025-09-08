@@ -1,0 +1,9 @@
+@startuml
+title KAIROS — High-level
+package "Governance" { [authority_matrix.yaml] [version_contract.yaml] }
+package "CI Protocols" { [validation_ci.yaml] [tpma_integrity.yaml] [returnscore_eval.yaml] }
+package "Workflows" { [intent_resolver.yaml] [reflex_map.yaml] [adjust_loop.yaml] }
+[routing_rules.yaml] --> [Workflows]
+[activation.yaml] --> [CI Protocols]
+[contract.full.json] --> [Governance]
+@enduml
