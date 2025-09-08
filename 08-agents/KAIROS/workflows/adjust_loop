@@ -1,0 +1,68 @@
+version: 0.3.0
+meta:
+  id: adjust_loop_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/workflows/adjust_loop.yaml
+library:
+  Minimal:
+    desc: малый корректирующий импульс
+    window: short
+    risk: low
+  Conservative:
+    desc: бережный корректирующий протокол
+    window: mid
+    risk: medium
+  Intensive:
+    desc: интенсивный протокол
+    window: long
+    risk: elevated
+steps:
+- id: detect_need
+  detect:
+    any:
+    - input_regex: (?i)apply\s+adjust|adjust\s+protocol|примени\s+adjust
+    - missing_field: Adjust
+    - safety_heading: true
+  action:
+    set_flag: ADJUST_REQUIRED
+    log: observability/logs/adjust_layer.yaml
+- id: choose_profile
+  when:
+    flag: ADJUST_REQUIRED
+  policy:
+  - if:
+      risk_score:
+        '>=': 0.8
+    use: Conservative
+  - if:
+      risk_score:
+        '>=': 0.9
+    use: Minimal
+  - if:
+      phase_in:
+      - F0
+      - F1
+    use: Conservative
+  - else: true
+    use: Minimal
+- id: apply_adjust
+  do:
+    set_field:
+      Adjust: '{{profile}}'
+    log: observability/logs/adjust_layer.yaml
+- id: escalate_if_needed
+  when:
+    any:
+    - safety_event:
+        severity_in:
+        - high
+        - critical
+    - risk_score:
+        '>=': 0.8
+  do:
+    escalate_to: ARKHIVAR
+- id: record_and_return
+  do:
+    append_trace: observability/logs/state_trace.yaml
+    respond: patch_summary
