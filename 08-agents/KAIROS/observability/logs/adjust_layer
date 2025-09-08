@@ -1,0 +1,19 @@
+version: 0.2.0
+entry_schema:
+  uid: string
+  run_id: string
+  agent_id: KAIROS
+  ts: iso8601
+  profile: Minimal|Conservative|Intensive
+  reason: string
+  risk_score: 0..1
+  escalation: None|ARKHIVAR
+entries:
+- uid: adj_0001
+  run_id: run_2025_09_07T03_00_00Z
+  agent_id: KAIROS
+  ts: '2025-09-07T14:19:30Z'
+  profile: Minimal
+  reason: missing Adjust field
+  risk_score: 0.12
+  escalation: None
