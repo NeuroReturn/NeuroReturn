@@ -1,0 +1,121 @@
+--- contract.full.json (old)
++++ contract.full.json (new)
+@@ -685,5 +685,117 @@
+       "input": "Сформулируй Engineering Contract для модуля Phase_Architecture_v1.2",
+       "output": "uid: ENGCON-PHA-v1.2\\nmodule: Phase_Architecture\\nversion: 1.2\\nauthor: KAIROS\\nverified_by: CI-Inspector\\ncompliance: [structure_integrity, glossary_match, phase_alignment]"
+     }
+-  ]
++  ],
++  "canon_structure": {
++    "root": "/08-agents/KAIROS/",
++    "core_files": [
++      "contract.core.json",
++      "contract.full.json",
++      "ci_runtime_behavior.yaml",
++      "README.md",
++      "identity.yaml",
++      "voice.md",
++      "tpma_ref.yaml",
++      "stackmap.yaml",
++      "authority_matrix.yaml",
++      "safety_gate.yaml",
++      "activation.yaml",
++      "routing_rules.yaml",
++      "state_machine.yaml"
++    ],
++    "glossary": {
++      "curated": "glossary/curated/",
++      "auto": "glossary/auto/",
++      "fallback_rules": "glossary/fallback_gen.md"
++    },
++    "ci_protocols": [
++      "ci_protocols/tpma_integrity.yaml",
++      "ci_protocols/returnscore_eval.yaml",
++      "ci_protocols/glossary_match.yaml",
++      "ci_protocols/validation_ci.yaml",
++      "ci_protocols/adjust_protocol.yaml"
++    ],
++    "debug_modes": [
++      "debug_modes/dev_mode.md",
++      "debug_modes/audit_switches.yaml"
++    ],
++    "state_machine": "state_machine.yaml",
++    "tests": [
++      "tests/unit_protocols.yaml",
++      "tests/symbol_trace_tests.yaml",
++      "tests/eval_returnscore.jsonl"
++    ],
++    "observability": {
++      "logs": "observability/logs/",
++      "decisions": "observability/decisions.md",
++      "metrics": "observability/metrics.md",
++      "graphs": "observability/graphs/",
++      "schemas": [
++        "schemas/audit_log.schema.json",
++        "schemas/trace_log.schema.json",
++        "schemas/routing_rules.schema.json",
++        "schemas/frontmatter.schema.json",
++        "schemas/glossary.fallback.schema.json"
++      ]
++    },
++    "pipelines": [
++      "pipelines/release.yaml",
++      "pipelines/validation_ci.yaml"
++    ],
++    "schemas_dir": "schemas/",
++    "scripts_dir": "scripts/"
++  },
++  "interoperability": {
++    "with_agent": "ARKHIVAR",
++    "logging_to": "ARKHIVAR/logs/audit_registry.md",
++    "glossary_crosscheck": "ARKHIVAR/glossary_verify.yaml",
++    "tpma_validation": "ARKHIVAR/ci_protocols/tpma_integrity.yaml"
++  },
++  "enforcement_policies": {
++    "tpma_trace_required": true,
++    "returnscore_checkpoints": [
++      "ΔHRV",
++      "ΔPSS",
++      "ΔCogPerf",
++      "Adherence"
++    ],
++    "glossary_autogen_allowed": true,
++    "glossary_autogen_rules": "glossary/fallback_gen.md",
++    "humor_mode": "Facilitator Only",
++    "adjust_required": true,
++    "explicit_validation_required": true,
++    "fallback_generation_status": "draft"
++  },
++  "ci_runtime_behavior": {
++    "file": "ci_runtime_behavior.yaml",
++    "modes": [
++      "Facilitator",
++      "CI-Inspector"
++    ]
++  },
++  "links": {
++    "core": [
++      "/08-agents/KAIROS/contract.full.json",
++      "/08-agents/KAIROS/state_machine.yaml",
++      "/08-agents/KAIROS/activation.yaml",
++      "/08-agents/KAIROS/ci_protocols/",
++      "/08-agents/KAIROS/observability/",
++      "/08-agents/KAIROS/stackmap.yaml",
++      "/08-agents/KAIROS/authority_matrix.yaml",
++      "/08-agents/KAIROS/debug_modes/",
++      "/08-agents/KAIROS/governance/version_contract.yaml"
++    ],
++    "optional": [
++      "/08-agents/KAIROS/routing_rules.yaml",
++      "/08-agents/KAIROS/ci_protocols/glossary_match.yaml",
++      "/08-agents/KAIROS/safety_gate.yaml"
++    ]
++  },
++  "frontmatter": {
++    "required": true,
++    "schema_file": "schemas/frontmatter.schema.json"
++  },
++  "trace_schema": {
++    "file": "observability/logs/state_trace.yaml"
++  }
+ }
