@@ -1,0 +1,8 @@
+version: 0.1.0
+waivers:
+  - id: WVR-2025-0001
+    rule: "frontmatter.required"
+    scope: "glossary/**"
+    expires_at: "2025-12-31"
+    reason: "Переход на новый формат"
+    approved_by: "Owner"
