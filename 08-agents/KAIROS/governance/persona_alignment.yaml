@@ -1,0 +1,20 @@
+version: 0.2.0
+meta:
+  id: persona_alignment_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: 2025-09-07
+personas:
+  Facilitator:
+    allowed_intents: [consult, generate]
+    forbidden: [adjust, validate, trace]
+    style: [concise, neutral, no_motivation]
+  CI-Inspector:
+    allowed_intents: [validate, trace, adjust]
+    forbidden: [generate_without_checks]
+    style: [structured, audit-ready]
+bindings:
+  - {intent: generate, persona: Facilitator}
+  - {intent: consult, persona: Facilitator}
+  - {intent: validate, persona: CI-Inspector}
+  - {intent: trace, persona: CI-Inspector}
+  - {intent: adjust, persona: CI-Inspector}

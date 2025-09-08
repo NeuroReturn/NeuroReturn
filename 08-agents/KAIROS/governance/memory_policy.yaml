@@ -1,0 +1,17 @@
+version: 0.2.0
+retention:
+  audit_registry_days: 365
+  state_trace_days: 90
+  symbol_trace_days: 90
+  adjust_layer_days: 180
+rotation:
+  enabled: true
+  schedule_cron: "0 4 * * *"
+pii_phi:
+  allow_store: false
+  redaction:
+    enabled: true
+    rules: ["emails","phones","keys","id_numbers"]
+glossary:
+  autogen_allowed: true
+  review_required: true

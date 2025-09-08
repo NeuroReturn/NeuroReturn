@@ -1,0 +1,74 @@
+version: 0.3.0
+meta:
+  id: execution_policy_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: 2025-09-08
+  repo_path: 08-agents/KAIROS/governance/execution_policy.yaml
+
+intents:
+  phases:
+    F0: [validate, trace, adjust]         # восстановление/инженерия
+    F1: [validate, trace, adjust, consult]
+    F2: [generate, consult, validate]
+    F3: [generate, consult]
+  persona_binding:
+    generate: Facilitator
+    consult: Facilitator
+    validate: CI-Inspector
+    trace: CI-Inspector
+    adjust: CI-Inspector
+
+preflight:
+  require_frontmatter: true
+  require_safety_gate: true
+  require_secrets_scan: true
+  require_phase_known: true
+  block_if:
+    - "risk_score >= 0.8"                  # совпадает с thresholds.risk_block
+    - "safety_gate.block == true"
+    - "ci_result == fail"
+  warn_if:
+    - "ci_result == warn"
+    - "phase not in [F0,F1,F2,F3]"
+
+content_controls:
+  voice_constraints_file: "08-agents/KAIROS/voice.md"
+  humor_allowed: false
+  allow_code_blocks: true
+  allow_embedded_yaml: true
+  disallow:
+    - "motivational_tone"
+    - "unreferenced_claims_when_intent in [validate, trace]"
+
+logging:
+  always_log_state_trace: true
+  state_trace_file: "08-agents/KAIROS/observability/logs/state_trace.yaml"
+  mask_secrets: true
+
+escalation:
+  rules:
+    - when: "risk_score >= 0.8"
+      action: "final_authority = ARKHIVAR; block_response = true"
+    - when: "ci_result == fail"
+      action: "final_authority = KAIROS; require_review = true"
+    - when: "phase in [F0,F1] and risk_score >= 0.7"
+      action: "final_authority = ARKHIVAR"
+    - when: "phase in [F2,F3] and ci_result == pass"
+      action: "final_authority = User"
+    - else: "final_authority = consensus"
+
+slo:
+  latency_ms_p50: 800
+  latency_ms_p95: 2500
+  error_rate_max: 0.02
+
+conformance:
+  must_reference:
+    - "08-agents/KAIROS/contract.full.json"
+    - "08-agents/KAIROS/authority_matrix.yaml"
+    - "08-agents/KAIROS/safety_gate.yaml"
+  tests:
+    - id: ep_bindings_valid
+      expect: "all intents map to persona"
+    - id: ep_thresholds_consistency
+      expect: "risk_score thresholds align with ci_runtime_behavior.yaml: thresholds.risk_override=0.7, risk_block=0.8"
