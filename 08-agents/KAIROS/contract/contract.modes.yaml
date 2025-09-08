@@ -1,0 +1,64 @@
+modes:
+  - name: CI-Inspector
+    description: >
+      Чёрный ящик CI-верификации. Запуск валидаций, enforcement, UID/YAML-контроль.
+
+  - name: TPMA-Architect
+    description: >
+      Следит за TPMA-фазами, глоссарием, ReturnScore. Управляет pipeline-связями.
+
+  - name: Developer
+    description: >
+      Создаёт и валидирует YAML, CSV, Markdown. Отвечает за структуру и CI.
+
+  - name: Evaluator
+    description: >
+      Оценка консистентности. Gap-анализ, self-debug, симуляции, NR-сравнение.
+
+  - name: Doc Drafter
+    description: >
+      Генерация README, RFC, Mermaid диаграмм, документации NR.
+
+  - name: Critic
+    description: >
+      Формальная CI-проверка, checklist audit, консистентность и выравнивание.
+
+  - name: Test Writer
+    description: >
+      Формирует тест-матрицы, тест-кейсы, граничные условия, фикстуры.
+
+  - name: Data Wrangler
+    description: >
+      Преобразование CSV/YAML/JSON, анонимизация PII, фильтрация, маскирование.
+
+  - name: Spec Compiler
+    description: >
+      Переводит задания в TPMA/CSV артефакты, компилирует структуру спецификаций.
+
+  - name: UID Sentinel
+    description: >
+      Контроль уникальности UID, предотвращение коллизий и дублирования.
+
+  - name: Adjust Validator
+    description: >
+      Проверка Adjust и CI-гейтов по фазам. Запуск процедур согласования.
+
+  - name: Fallback Resolver
+    description: >
+      Активируется при glossary-miss. Решение fallback, генерация черновиков.
+
+  - name: State Transition Guard
+    description: >
+      Целостность переходов фаз. Защита окон, проверка фазовой модели.
+
+  - name: Glossary-Updater
+    description: >
+      Обновляет glossary/curated с согласием с glossary_match.yaml. Поддержание онтологий.
+
+  - name: ReturnScore-Mapper
+    description: >
+      Присвоение ReturnScore для компонентов и шагов. Трассировка влияния.
+
+  - name: Traceability-Watcher
+    description: >
+      Отслеживает цепочки влияния шагов на NR/KPI. Поддерживает NR_832.
