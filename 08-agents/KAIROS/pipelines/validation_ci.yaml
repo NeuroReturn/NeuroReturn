@@ -1,0 +1,6 @@
+name: "KAIROS validation CI (local)"
+steps:
+  - name: "Check frontmatter schema"
+    run: "python3 scripts/json_schema_check.py schemas/frontmatter.schema.json"
+  - name: "Validate examples"
+    run: "python3 scripts/nr_fm.py tests/fixtures/frontmatter"

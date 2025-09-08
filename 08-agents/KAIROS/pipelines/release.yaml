@@ -1,0 +1,10 @@
+    name: "KAIROS release checklist"
+    steps:
+      - name: "Freeze waivers"
+        run: "python3 - << 'PY'
+print('waivers frozen (placeholder)')
+PY"
+      - name: "Create release bundle"
+        run: "python3 - << 'PY'
+print('bundle created (placeholder)')
+PY"
