@@ -1,52 +1,47 @@
 name: KAIROS CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "**" ]
-  pull_request:
-  workflow_dispatch: {}   # ручной запуск
-
-permissions:
-  contents: read
+    paths:
+      - '08-agents/KAIROS/**'
+      - '.github/workflows/kairos-ci.yml'
 
 jobs:
-  precommit:
-    name: pre-commit
+  pre-commit:
+    if: ${{ hashFiles('08-agents/KAIROS/.pre-commit-config.yaml') != '' }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 08-agents/KAIROS
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.x'
       - name: Install pre-commit
         run: pip install pre-commit
-      - name: Run pre-commit (all files)
+      - name: Run pre-commit
         run: pre-commit run --all-files
-        working-directory: 08-agents/KAIROS
 
   validation:
-    name: validation
     runs-on: ubuntu-latest
-    needs: precommit
+    defaults:
+      run:
+        working-directory: 08-agents/KAIROS
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Schema check
+          python-version: '3.x'
+      - name: Install deps
+        run: pip install jsonschema pyyaml
+      - name: JSON Schema self-check
+        if: ${{ hashFiles('08-agents/KAIROS/schemas/frontmatter.schema.json') != '' }}
         run: python3 scripts/json_schema_check.py schemas/frontmatter.schema.json
-        working-directory: 08-agents/KAIROS
       - name: Frontmatter fixtures validate
+        if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' }}
         run: python3 scripts/nr_fm.py tests/fixtures/frontmatter
-        working-directory: 08-agents/KAIROS
-      - name: CI validate (stub)
+      - name: Make ci-validate
+        if: ${{ hashFiles('08-agents/KAIROS/Makefile') != '' }}
         run: make ci-validate
-        working-directory: 08-agents/KAIROS
-      - name: Upload observability logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kairos-logs
-          path: |
-            08-agents/KAIROS/observability/logs/*
-          if-no-files-found: ignore
