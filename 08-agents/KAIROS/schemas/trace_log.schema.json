@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neuroreturn.local/schemas/trace_log.schema.json",
+  "title": "KAIROS Trace Log Entry",
+  "type": "object",
+  "required": [
+    "uid",
+    "run_id",
+    "agent_id",
+    "ts_start",
+    "ts_end",
+    "request_id",
+    "intent",
+    "mode",
+    "phase_in",
+    "phase_out",
+    "ci_tests_run",
+    "ci_result",
+    "risk_score",
+    "final_authority",
+    "adjust_applied"
+  ],
+  "properties": {
+    "uid": {
+      "type": "string",
+      "minLength": 4
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 4
+    },
+    "agent_id": {
+      "type": "string",
+      "const": "KAIROS"
+    },
+    "ts_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ts_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "validate",
+        "adjust",
+        "generate",
+        "trace",
+        "consult"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "Facilitator",
+        "CI-Inspector"
+      ]
+    },
+    "phase_in": {
+      "type": "string",
+      "enum": [
+        "F0",
+        "F1",
+        "F2",
+        "F3"
+      ]
+    },
+    "phase_out": {
+      "type": "string",
+      "enum": [
+        "F0",
+        "F1",
+        "F2",
+        "F3"
+      ]
+    },
+    "tpma_linked": {
+      "type": "string"
+    },
+    "ci_tests_run": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ci_result": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "risk_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "final_authority": {
+      "type": "string",
+      "enum": [
+        "User",
+        "KAIROS",
+        "ARKHIVAR"
+      ]
+    },
+    "adjust_applied": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

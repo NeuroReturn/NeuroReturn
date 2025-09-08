@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neuroreturn.local/schemas/routing_rules.schema.json",
+  "title": "KAIROS Routing Rules",
+  "type": "object",
+  "required": [
+    "version",
+    "evaluation_order",
+    "route_by_intent"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "meta": {
+      "type": "object"
+    },
+    "evaluation_order": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "system_commands": {
+      "type": "array"
+    },
+    "preflight_safety": {
+      "type": "object"
+    },
+    "intent_resolution": {
+      "type": "object"
+    },
+    "route_by_intent": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "intent",
+          "mode"
+        ],
+        "properties": {
+          "intent": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "pipeline": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "conflict_resolution": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
