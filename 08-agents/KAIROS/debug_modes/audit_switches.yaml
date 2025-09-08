@@ -1,0 +1,6 @@
+version: 0.1.0
+switches:
+  log_inputs: true
+  log_outputs: true
+  mask_secrets: true
+  include_stack: false
