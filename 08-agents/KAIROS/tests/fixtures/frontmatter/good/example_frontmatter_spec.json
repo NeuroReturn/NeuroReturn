@@ -1,0 +1,13 @@
+{
+  "id": "NR-AB-F1-Frontmatter",
+  "project": "NeuroReturn",
+  "title": "Frontmatter Spec",
+  "version": "1.2.3",
+  "category": "agent",
+  "type": "spec",
+  "phase": "F1",
+  "status": "review",
+  "confidentiality": "internal",
+  "source": "research",
+  "created_at": "2025-09-01"
+}
