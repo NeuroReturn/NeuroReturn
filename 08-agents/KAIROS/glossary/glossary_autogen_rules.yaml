@@ -1,0 +1,5 @@
+version: 0.1.0
+rules:
+  - detect: "\bReturnScore\b"
+    definition: "Интегральный показатель восстановления"
+    confidence: 0.6
