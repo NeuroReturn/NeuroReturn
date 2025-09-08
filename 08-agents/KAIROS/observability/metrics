@@ -1,0 +1,10 @@
+# Metrics — KAIROS
+Updated: 2025-09-07T14:19:30Z
+
+Сбор метрик (локально в логах):
+- `ReturnScore` (0..1), `adherence` (0..1), `delta_cogperf` (-1..1 normalized), `latency` (ms p95), `uptime` (0..1).
+- Счётчики safety событий и блокировок.
+- Покрытие глоссария (0..1).
+
+Экспорт наружу (позже):
+- TODO: описать схему для push/pull шлюза.
