@@ -1,0 +1,6 @@
+# Dev Mode
+toggles:
+  TRACE: true
+  VERBOSE: true
+entry:
+  command: "/dev"
