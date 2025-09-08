@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+# Frontmatter validator: bootstraps dependencies and runs validations.
+import sys, json, subprocess, os, glob
+from pathlib import Path
+
+def ensure(pkg):
+    try:
+        __import__(pkg)
+    except ImportError:
+        print(f"[setup] installing {pkg} ...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", pkg])
+    return __import__(pkg)
+
+jsonschema = ensure("jsonschema")
+
+ROOT = Path(__file__).resolve().parents[1]  # repo root = .../KAIROS_quickstart
+SCHEMA_PATH = ROOT / "schemas" / "frontmatter.schema.json"
+GOOD_DIR = ROOT / "tests" / "fixtures" / "frontmatter" / "good"
+BAD_DIR  = ROOT / "tests" / "fixtures" / "frontmatter" / "bad"
+
+schema = json.load(open(SCHEMA_PATH, "r", encoding="utf-8"))
+from jsonschema import Draft202012Validator, ValidationError
+Draft202012Validator.check_schema(schema)
+val = Draft202012Validator(schema)
+
+def validate_dir(d, expect_pass=True):
+    ok = True
+    for p in sorted(glob.glob(str(d / "*.json"))):
+        with open(p, "r", encoding="utf-8") as f:
+            inst = json.load(f)
+        try:
+            val.validate(inst)
+            if expect_pass:
+                print(f"[PASS] {p}")
+            else:
+                print(f"[UNEXPECTED PASS] {p}")
+                ok = False
+        except ValidationError as e:
+            if expect_pass:
+                print(f"[FAIL] {p} -> {e.message}")
+                ok = False
+            else:
+                print(f"[FAIL as expected] {p}")
+    return ok
+
+ok1 = validate_dir(GOOD_DIR, expect_pass=True)
+ok2 = validate_dir(BAD_DIR, expect_pass=False)
+sys.exit(0 if (ok1 and ok2) else 2)
