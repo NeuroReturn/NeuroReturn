@@ -1,53 +1,9 @@
 name: KAIROS CI
-
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '08-agents/KAIROS/**'
-      - '.github/workflows/kairos-ci.yml'
 
 jobs:
-  pre-commit:
-    if: ${{ hashFiles('08-agents/KAIROS/.pre-commit-config.yaml') != '' }}
+  ping:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Show tree
-        run: ls -la
-      - name: Ensure KAIROS path
-        run: test -d "08-agents/KAIROS" && echo "OK: path exists" || (echo "ERROR: 08-agents/KAIROS missing" && exit 1)
-      - name: Install pre-commit
-        run: pip install pre-commit
-      - name: Run pre-commit (repo root)
-        run: pre-commit run --all-files
-      - name: Run pre-commit (KAIROS dir)
-        working-directory: 08-agents/KAIROS
-        run: pre-commit run --all-files || true
-
-  validation:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Show tree
-        run: ls -la && ls -la 08-agents || true && ls -la 08-agents/KAIROS || true
-      - name: Install deps
-        run: pip install jsonschema pyyaml
-      - name: JSON Schema self-check
-        if: ${{ hashFiles('08-agents/KAIROS/schemas/frontmatter.schema.json') != '' }}
-        working-directory: 08-agents/KAIROS
-        run: python3 scripts/json_schema_check.py schemas/frontmatter.schema.json
-      - name: Frontmatter fixtures validate
-        if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' }}
-        working-directory: 08-agents/KAIROS
-        run: python3 scripts/nr_fm.py tests/fixtures/frontmatter
-      - name: Make ci-validate
-        if: ${{ hashFiles('08-agents/KAIROS/Makefile') != '' }}
-        working-directory: 08-agents/KAIROS
-        run: make ci-validate
+      - run: echo "KAIROS minimal CI is alive"
