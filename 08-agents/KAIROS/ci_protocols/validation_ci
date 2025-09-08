@@ -1,0 +1,168 @@
+version: 0.4.0
+meta:
+  id: validation_ci_kairos
+  owner: NeuroReturn™ Engineering
+  updated_at: '2025-09-07'
+  repo_path: 08-agents/KAIROS/ci_protocols/validation_ci.yaml
+profiles:
+  active: dev
+  severity_matrix:
+    dev:
+      frontmatter: fail
+      citations: warn
+      tpma_integrity: fail
+      phase_tpma: warn
+      links: fail
+      safety_content: fail
+      secrets: fail
+      returnscore_eval: warn
+    prod:
+      frontmatter: fail
+      citations: fail
+      tpma_integrity: fail
+      phase_tpma: fail
+      links: fail
+      safety_content: fail
+      secrets: fail
+      returnscore_eval: fail
+inputs:
+  docs_root: 08-agents/KAIROS/
+  schemas:
+    frontmatter: 08-agents/KAIROS/schemas/frontmatter.schema.json
+    audit_log: 08-agents/KAIROS/schemas/audit_log.schema.json
+    routing_rules: 08-agents/KAIROS/schemas/routing_rules.schema.json
+    glossary_fallback: 08-agents/KAIROS/schemas/glossary.fallback.schema.json
+    trace_log: 08-agents/KAIROS/schemas/trace_log.schema.json
+  ci_runtime_behavior: 08-agents/KAIROS/ci_runtime_behavior.yaml
+  authority_matrix: 08-agents/KAIROS/authority_matrix.yaml
+  safety_gate: 08-agents/KAIROS/safety_gate.yaml
+  tpma_ref: 08-agents/KAIROS/tpma_ref.yaml
+  stackmap: 08-agents/KAIROS/stackmap.yaml
+evaluation_order:
+- normalize
+- frontmatter.validate
+- secrets.scan
+- links.check
+- citations.check
+- tpma_integrity.validate
+- phase_tpma.verify
+- safety_content.scan
+- returnscore_eval.check
+- finalize
+normalize:
+  encoding: utf-8
+  line_endings: LF
+  strip_bom: true
+  replace_tabs: true
+frontmatter.validate:
+  required: true
+  schema_file: 08-agents/KAIROS/schemas/frontmatter.schema.json
+  require_fields:
+  - id
+  - project
+  - title
+  - version
+  - category
+  - type
+  - phase
+  - status
+  - confidentiality
+  - source
+  - created_at
+secrets.scan:
+  gitleaks_enabled: true
+  mask_prefix: FAKE_
+  patterns:
+  - AKIA[0-9A-Z]{16}
+  - AIza[0-9A-Za-z\-_]{35}
+  - sk-[0-9A-Za-z]{20,}
+links.check:
+  check_upstream: true
+  check_downstream: true
+  check_linked_to: true
+  require_existing_targets: true
+  upstream_field_names:
+  - Upstream
+  - upstream
+  - references
+  downstream_field_names:
+  - Downstream
+  - downstream
+  wiki_link_patterns:
+  - \[\[(.+?)\]\]
+  - \(([^\)]+\.md)\)
+  - \(([^\)]+\.MD)\)
+  ignore_patterns:
+  - ^https?://
+  - '^mailto:'
+citations.check:
+  required: true
+  coverage_min: 0.95
+  pattern: \[(.+\.md):L\d+-L\d+\]
+  prefer_authorities: true
+  min_authority_ratio: 0.7
+  categories:
+    strict:
+    - policy
+    - spec
+    - rfc
+    relaxed:
+    - note
+    - journal
+  authorities:
+  - NR_120_System-Constitution_IMMUTABLE.md
+  - NR_000_Core-Meaning.md
+  - NR_100_Engineering-Core.md
+tpma_integrity.validate:
+  ref: 08-agents/KAIROS/ci_protocols/tpma_integrity.yaml
+phase_tpma.verify:
+  require_terms:
+  - Trigger
+  - Protocol
+  - Measure
+  - Adjust
+  - SafetyGate
+  require_returnscore_mention: true
+  returnscore_patterns:
+  - \bReturnScore\b
+  - \bAnalytics Rules\b
+  - \bReturn Score\b
+  require_cross_doc_ids_any_of:
+  - NR_400_Data-Dictionary
+  - NR_410_Analytics-Rules
+safety_content.scan:
+  file_globs:
+  - 04-safety/NR_620_Safety-Gates.md
+  - 04-safety/NR_622_AE-Definitions_Grading.md
+  - 04-safety/NR_623_Safety-Stop_Escalation-Rules.md
+  - 04-safety/NR_730_Triage-Matrix.md
+  - 04-safety/NR_332_Adverse-Events_SOP.md
+  patterns:
+    heading_stop: ^(#+\s*)(STOP|Stop|Stop Conditions|СТОП|Стоп)
+    heading_escalation: ^(#+\s*)(Escalation|Escalation Tree|Эскалация)
+    heading_sla: ^(#+\s*)(SLA|Service Level|Response Time|Время реакции|SLA/Время
+      реакции)
+  require_cross_doc_ids:
+  - NR_620_Safety-Gates
+  - NR_622_AE-Definitions_Grading
+  - NR_623_Safety-Stop_Escalation-Rules
+  - NR_730_Triage-Matrix
+  - NR_332_Adverse-Events_SOP
+  fail_if_missing: true
+returnscore_eval.check:
+  ref: 08-agents/KAIROS/ci_protocols/returnscore_eval.yaml
+finalize:
+  aggregation:
+    rule: max_severity
+    weights:
+      fail: 1.0
+      warn: 0.5
+      pass: 0.0
+  outputs:
+  - ci_result
+  - warnings
+  - metrics
+  ci_result_map:
+    '>=0.8': fail
+    '>=0.2': warn
+    <0.2: pass
