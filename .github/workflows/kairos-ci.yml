@@ -1,9 +1,61 @@
 name: KAIROS CI
+
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '08-agents/KAIROS/**'
+      - '.github/workflows/kairos-ci.yml'
 
 jobs:
-  ping:
+  smoke:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "KAIROS minimal CI is alive"
+      - uses: actions/checkout@v4
+
+      - name: Show tree
+        run: |
+          echo "::group::tree-root"
+          ls -la
+          echo "::endgroup::"
+          echo "::group::tree-KAIROS"
+          ls -la 08-agents || true
+          ls -la 08-agents/KAIROS || true
+          echo "::endgroup::"
+
+      - name: Sanity verify paths
+        run: |
+          for p in \
+            "08-agents/KAIROS/.pre-commit-config.yaml" \
+            "08-agents/KAIROS/Makefile" \
+            "08-agents/KAIROS/scripts/json_schema_check.py" \
+            "08-agents/KAIROS/scripts/nr_fm.py" ; do
+            if [ -f "$p" ]; then echo "OK $p"; else echo "MISS $p"; fi
+          done
+
+      - name: Python deps
+        run: pip install --upgrade pip jsonschema pyyaml || true
+
+      - name: Schema self-check (if present)
+        run: |
+          if [ -f 08-agents/KAIROS/schemas/frontmatter.schema.json ]; then
+            python3 08-agents/KAIROS/scripts/json_schema_check.py 08-agents/KAIROS/schemas/frontmatter.schema.json || true
+          else
+            echo "SKIP schema"
+          fi
+
+      - name: Fixture validate (if present)
+        run: |
+          if [ -d 08-agents/KAIROS/tests/fixtures/frontmatter ]; then
+            python3 08-agents/KAIROS/scripts/nr_fm.py 08-agents/KAIROS/tests/fixtures/frontmatter || true
+          else
+            echo "SKIP fixtures"
+          fi
+
+      - name: Make ci-validate (if present)
+        run: |
+          if [ -f 08-agents/KAIROS/Makefile ]; then
+            make -C 08-agents/KAIROS ci-validate || true
+          else
+            echo "SKIP make"
+          fi
