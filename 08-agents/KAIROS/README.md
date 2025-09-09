@@ -95,6 +95,7 @@ authority:
 ## 12. Архитектурный план (минимум)
 - Ссылка на диаграмму: `observability/graphs/architecture.puml`
 - План расширений: FHIR-профиль, eval-наборы, интеграция сторожей секретов.
+![KAIROS CI](https://github.com/balkonslando-dotcom/NeuroReturn/actions/workflows/kairos-ci.yml/badge.svg?branch=main)
 
 ---
 
