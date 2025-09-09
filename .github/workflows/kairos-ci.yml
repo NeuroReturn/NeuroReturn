@@ -1,19 +1,28 @@
 name: KAIROS CI
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
     paths:
-      - '08-agents/KAIROS/**'
+      - '08-agents/**'
       - '.github/workflows/kairos-ci.yml'
+  pull_request:
+    paths:
+      - '08-agents/**'
 
 jobs:
   smoke:
+    name: KAIROS CI
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: "1"
 
-      - name: Show tree
+    steps:
+      - name: Настроить работу
+        uses: actions/checkout@v4
+
+      - name: Показать дерево
         run: |
           echo "::group::tree-root"
           ls -la
@@ -23,43 +32,45 @@ jobs:
           ls -la 08-agents/KAIROS || true
           echo "::endgroup::"
 
-      - name: Sanity verify paths
+      - name: Пути проверки работоспособности (строго)
         run: |
-          for p in \
-            "08-agents/KAIROS/.pre-commit-config.yaml" \
-            "08-agents/KAIROS/Makefile" \
-            "08-agents/KAIROS/scripts/json_schema_check.py" \
-            "08-agents/KAIROS/scripts/nr_fm.py" ; do
-           if [ -f "$p" ]; then
-           echo "OK $p"
-           else
-           echo "::error::MISS $p"
-           exit 1
-          fi
+          set -euo pipefail
+          paths=(
+            "08-agents/KAIROS/.pre-commit-config.yaml"
+            "08-agents/KAIROS/Makefile"
+            "08-agents/KAIROS/scripts/json_schema_check.py"
+            "08-agents/KAIROS/scripts/nr_fm.py"
+          )
+          for p in "${paths[@]}"; do
+            if [ -f "$p" ]; then
+              echo "OK $p"
+            else
+              echo "::error::MISS $p"
+              exit 1
+            fi
+          done
 
       - name: Python deps
-        run: pip install --upgrade pip jsonschema pyyaml || true
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
 
-      - name: Schema self-check (if present)
+      - name: Установить зависимости
         run: |
-          if [ -f 08-agents/KAIROS/schemas/frontmatter.schema.json ]; then
-            python3 08-agents/KAIROS/scripts/json_schema_check.py 08-agents/KAIROS/schemas/frontmatter.schema.json || true
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
           else
-            echo "SKIP schema"
+            pip install jsonschema pyyaml
           fi
 
-      - name: Fixture validate (if present)
+      - name: Самопроверка схемы
         run: |
-          if [ -d 08-agents/KAIROS/tests/fixtures/frontmatter ]; then
-            python3 08-agents/KAIROS/scripts/nr_fm.py 08-agents/KAIROS/tests/fixtures/frontmatter || true
-          else
-            echo "SKIP fixtures"
-          fi
+          set -e
+          python 08-agents/KAIROS/scripts/json_schema_check.py
 
-      - name: Make ci-validate (if present)
+      - name: Проверка фронтматтера/фикстур
         run: |
-          if [ -f 08-agents/KAIROS/Makefile ]; then
-            make -C 08-agents/KAIROS ci-validate || true
-          else
-            echo "SKIP make"
-          fi
+          set -e
+          python 08-agents/KAIROS/scripts/nr_fm.py --check
