@@ -1,0 +1,13 @@
+{
+  "id": "NR_001_InvalidPhase",
+  "project": "NeuroReturn",
+  "title": "Should fail by phase",
+  "version": "0.1.0",
+  "category": "policy",
+  "type": "policy",
+  "phase": "F5",
+  "status": "draft",
+  "confidentiality": "internal",
+  "source": "chat",
+  "created_at": "2025-09-10"
+}
