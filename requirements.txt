@@ -1,3 +1,2 @@
-# Зависимости для CI-проверок KAIROS
-jsonschema==4.23.0
+jsonschema>=4.21.0,<5
 PyYAML==6.0.2
