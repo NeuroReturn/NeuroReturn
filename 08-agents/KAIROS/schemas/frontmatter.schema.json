@@ -3,95 +3,276 @@
   "$id": "https://neuroreturn.local/schemas/frontmatter.schema.json",
   "title": "NeuroReturn Frontmatter (dev, rich)",
   "type": "object",
-
   "required": [
-    "id","project","title","version","category","type",
-    "phase","status","confidentiality","source","created_at"
+    "id",
+    "project",
+    "title",
+    "version",
+    "category",
+    "type",
+    "phase",
+    "status",
+    "confidentiality",
+    "source",
+    "created_at"
   ],
-
   "properties": {
     "id": {
       "type": "string",
       "description": "Устойчивый ID артефакта",
-      "pattern": "^(NR_\\d{3}_[A-Za-z0-9\\-]+|NR-[A-Z]{2}-F[0-3]-[A-Za-z0-9\\-]+|KAIROS_[A-Za-z0-9\\-]+)$"
+      "pattern": "^(NR_\\d{3}_[A-Za-z0-9\\-]+|NR-[A-Z]{2}-F[0-3]-[A-Za-z0-9\\-]+|KAIROS_[A-Za-z0-9\\-]+)$",
+      "minLength": 1
     },
     "project": {
       "type": "string",
-      "enum": ["NeuroReturn", "NeuroReturn™"]
+      "enum": [
+        "NeuroReturn",
+        "NeuroReturn™"
+      ]
     },
-    "title": { "type": "string", "minLength": 3 },
+    "title": {
+      "type": "string",
+      "minLength": 3
+    },
     "version": {
       "type": "string",
-      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z\\-.]+)?(?:\\+[0-9A-Za-z\\-.]+)?$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z\\-.]+)?(?:\\+[0-9A-Za-z\\-.]+)?$",
+      "minLength": 1
     },
     "category": {
       "type": "string",
-      "enum": ["core","safety","spec","policy","rfc","workflow","contract","agent","glossary","data","other"]
+      "enum": [
+        "core",
+        "safety",
+        "spec",
+        "policy",
+        "rfc",
+        "workflow",
+        "contract",
+        "agent",
+        "glossary",
+        "data",
+        "other"
+      ]
     },
     "type": {
       "type": "string",
-      "enum": ["policy","spec","rfc","md","csv","yaml","contract","protocol","test","note","template"]
+      "enum": [
+        "policy",
+        "spec",
+        "rfc",
+        "md",
+        "csv",
+        "yaml",
+        "contract",
+        "protocol",
+        "test",
+        "note",
+        "template"
+      ]
     },
-    "phase": { "type": "string", "pattern": "^F[0-3]$" },
-    "status": { "type": "string", "enum": ["draft","review","approved","canon","immutable"] },
-    "confidentiality": { "type": "string", "enum": ["public","internal","restricted","secret"] },
-    "source": { "type": "string", "enum": ["chat","decision","research","import","legacy"] },
-    "created_at": { "type": "string", "format": "date" },
-
-    "updated_at": { "type": "string", "format": "date" },
-    "last_updated": { "type": "string", "format": "date" },
-    "next_review_date": { "type": "string", "format": "date" },
-
-    "author": { "type": "array", "items": { "type": "string" } },
-    "owner": { "type": "string" },
-    "reviewers": { "type": "array", "items": { "type": "string" } },
-    "validated_by": { "type": "string" },
-    "verified_by": { "type": "string" },
-
-    "description": { "type": "string" },
-    "cluster": { "type": "string" },
-
-    "level": { "type": "integer", "minimum": 0, "maximum": 5 },
-    "level_label": { "type": "string" },
-    "role": { "type": "string" },
-
-    "tags": { "type": "array", "items": { "type": "string" } },
-    "FunctionalLayer": { "type": "string" },
-    "ArchitectureLayer": { "type": "string" },
-
-    "linked_to": { "type": "array", "items": { "type": "string" } },
-    "upstream": { "type": "array", "items": { "type": "string" } },
-    "downstream": { "type": "array", "items": { "type": "string" } },
-
+    "phase": {
+      "type": "string",
+      "pattern": "^F[0-3]$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "review",
+        "approved",
+        "canon",
+        "immutable"
+      ]
+    },
+    "confidentiality": {
+      "type": "string",
+      "enum": [
+        "public",
+        "internal",
+        "restricted",
+        "secret"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "decision",
+        "research",
+        "import",
+        "legacy"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_review_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "author": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validated_by": {
+      "type": "string"
+    },
+    "verified_by": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cluster": {
+      "type": "string"
+    },
+    "level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "level_label": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "FunctionalLayer": {
+      "type": "string"
+    },
+    "ArchitectureLayer": {
+      "type": "string"
+    },
+    "linked_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "upstream": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "downstream": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "safety_class": {
       "type": "string",
-      "enum": ["none","low","medium","high","critical"]
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
     },
-
-    "trigger": { "type": "string" },
-    "protocol": { "type": "string" },
-    "measure": { "type": "string" },
-    "adjust": { "type": "string" },
-
+    "trigger": {
+      "type": "string"
+    },
+    "protocol": {
+      "type": "string"
+    },
+    "measure": {
+      "type": "string"
+    },
+    "adjust": {
+      "type": "string"
+    },
     "kpi": {
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["ReturnScore","Adherence","ΔCogPerf","SafetyEvents","Latency","Uptime"]
+        "enum": [
+          "ReturnScore",
+          "Adherence",
+          "ΔCogPerf",
+          "SafetyEvents",
+          "Latency",
+          "Uptime"
+        ]
       }
     }
   },
-
-  "additionalProperties": true,
-
+  "additionalProperties": false,
   "allOf": [
     {
-      "if": { "properties": { "type": { "const": "policy" } }, "required": ["type"] },
-      "then": { "properties": { "category": { "enum": ["policy","safety","core"] } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "policy"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "category": {
+            "enum": [
+              "policy",
+              "safety",
+              "core"
+            ]
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "spec" } }, "required": ["type"] },
-      "then": { "properties": { "category": { "enum": ["spec","core","agent"] } } }
+      "if": {
+        "properties": {
+          "type": {
+            "const": "spec"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "category": {
+            "enum": [
+              "spec",
+              "core",
+              "agent"
+            ]
+          }
+        }
+      }
     }
   ]
 }
