@@ -1,49 +1,52 @@
 #!/usr/bin/env python3
-import sys, re, json, yaml, pathlib
+import argparse, json, sys, os, glob
 from jsonschema import Draft202012Validator
 
-ROOT = pathlib.Path(".")
-SCHEMA_PATH = pathlib.Path("schemas/frontmatter.schema.json")
+def validate_json(validator, path, should_pass=True):
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    try:
+        validator.validate(data)
+        ok = True
+        err = None
+    except Exception as e:
+        ok = False
+        err = e
 
-def extract_frontmatter(text: str):
-    m = re.match(r"^---\n(.*?)\n---\n", text, flags=re.S)
-    return yaml.safe_load(m.group(1)) if m else None
+    if should_pass and not ok:
+        print(f"[FAIL: expected pass] {path}\n{err}", file=sys.stderr)
+        return 1
+    if (not should_pass) and ok:
+        print(f"[FAIL: expected fail]  {path}", file=sys.stderr)
+        return 1
+    print(f"[OK] {path}")
+    return 0
 
-def check_one(md_path: pathlib.Path, validator) -> list[str]:
-    errs = []
-    data = md_path.read_text(encoding="utf-8").replace("\r\n","\n")
-    fm = extract_frontmatter(data)
-    if not fm:
-        errs.append(f"[frontmatter] {md_path}: missing or malformed")
-        return errs
-    for e in sorted(validator.iter_errors(fm), key=str):
-        errs.append(f"[schema] {md_path}: {e.message}")
-    return errs
+def main(argv=None):
+    p = argparse.ArgumentParser(
+        description="Validate KAIROS frontmatter JSON files against JSON Schema."
+    )
+    p.add_argument("--schema", required=True, help="Path to frontmatter.schema.json")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--base", help="Folder with fixtures containing 'good' and/or 'bad' subfolders")
+    g.add_argument("--file", help="Validate a single JSON file (must be valid)")
+    args = p.parse_args(argv)
 
-def main():
-    if not SCHEMA_PATH.exists():
-        print(f"Schema not found: {SCHEMA_PATH}", file=sys.stderr)
-        sys.exit(2)
-
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    with open(args.schema, "r", encoding="utf-8") as f:
+        schema = json.load(f)
     validator = Draft202012Validator(schema)
 
-    targets = [pathlib.Path(p) for p in sys.argv[1:]] or list(ROOT.rglob("**/*.md"))
-    errors = []
-    for p in targets:
-        if p.suffix.lower() != ".md": 
-            continue
-        try:
-            p.read_bytes().decode("utf-8")
-        except UnicodeDecodeError:
-            errors.append(f"[encoding] {p}: not UTF-8")
-            continue
-        errors.extend(check_one(p, validator))
-
-    if errors:
-        print("\n".join(errors))
-        sys.exit(1)
-    print("frontmatter OK")
+    rc = 0
+    if args.file:
+        rc |= validate_json(validator, args.file, should_pass=True)
+    else:
+        good_dir = os.path.join(args.base, "good")
+        bad_dir  = os.path.join(args.base, "bad")
+        for pth in sorted(glob.glob(os.path.join(good_dir, "*.json"))):
+            rc |= validate_json(validator, pth, True)
+        for pth in sorted(glob.glob(os.path.join(bad_dir, "*.json"))):
+            rc |= validate_json(validator, pth, False)
+    return rc
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
