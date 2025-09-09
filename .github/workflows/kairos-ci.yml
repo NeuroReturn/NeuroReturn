@@ -30,8 +30,12 @@ jobs:
             "08-agents/KAIROS/Makefile" \
             "08-agents/KAIROS/scripts/json_schema_check.py" \
             "08-agents/KAIROS/scripts/nr_fm.py" ; do
-            if [ -f "$p" ]; then echo "OK $p"; else echo "MISS $p"; fi
-          done
+           if [ -f "$p" ]; then
+           echo "OK $p"
+           else
+           echo "::error::MISS $p"
+           exit 1
+          fi
 
       - name: Python deps
         run: pip install --upgrade pip jsonschema pyyaml || true
