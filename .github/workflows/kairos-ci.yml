@@ -1,8 +1,8 @@
 name: KAIROS CI
 
 on:
-  workflow_dispatch:
-  push:
+  workflow_dispatch: {}         # ручной запуск кнопкой
+  push:                         # автозапуск на коммиты в main по важным путям
     branches: [ main ]
     paths:
       - '.github/workflows/kairos-ci.yml'
@@ -11,7 +11,7 @@ on:
       - 'pipelines/**'
       - 'requirements.txt'
       - 'pyproject.toml'
-  pull_request:
+  pull_request:                 # автозапуск на PR в main
     branches: [ main ]
     paths:
       - '.github/workflows/kairos-ci.yml'
@@ -20,16 +20,23 @@ on:
       - 'pipelines/**'
       - 'requirements.txt'
       - 'pyproject.toml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kairos-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   kairos:
     name: KAIROS CI
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: "1"
 
     steps:
-      - name: Set up job
-        run: echo "start"
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -37,11 +44,10 @@ jobs:
         shell: bash
         run: |
           echo "::group::tree-root"; ls -la; echo "::endgroup::"
-          echo "::group::tree-KAIROS"
-          ls -la 08-agents || true
-          ls -la 08-agents/KAIROS || true
-          echo "::endgroup::"
+          echo "::group::tree-08-agents"; ls -la 08-agents || true; echo "::endgroup::"
+          echo "::group::tree-KAIROS"; ls -la 08-agents/KAIROS || true; echo "::endgroup::"
 
+      # Строгая проверка наличия ключевых путей
       - name: Sanity verify paths (strict)
         shell: bash
         run: |
@@ -52,58 +58,85 @@ jobs:
             "08-agents/KAIROS/scripts/json_schema_check.py" \
             "08-agents/KAIROS/scripts/nr_fm.py"
           do
-            if [ -f "$p" ]; then echo "OK $p"; else echo "MISS $p"; exit 1; fi
+            if [ -f "$p" ]; then
+              echo "OK $p"
+            else
+              echo "::error::MISS $p"; exit 1
+            fi
           done
 
-      - name: Python deps
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
-      - name: Install dependencies
+      # Если есть requirements/pyproject — ставим зависимости; иначе просто пропускаем
+      - name: Install dependencies (if present)
+        if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') != '' }}
         shell: bash
         run: |
           set -euo pipefail
+          python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           elif [ -f pyproject.toml ]; then
             pip install -e .
-          else
-            echo "No requirements.txt / pyproject.toml — skipping install"
           fi
-          python -c "import jsonschema, yaml; print('jsonschema=',jsonschema.__version__,' PyYAML=',yaml.__version__)"
+          python - <<'PY'
+          import jsonschema, yaml
+          print("jsonschema =", jsonschema.__version__)
+          print("PyYAML    =", yaml.__version__)
+          PY
 
-      - name: Schema self-check
+      - name: Dependencies not found — skip install
+        if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') == '' }}
+        run: echo "No requirements.txt / pyproject.toml — skipping dependency install."
+
+      # Самопроверка схемы: валидность JSON Schema (строго)
+      - name: Schema self-check (strict)
+        if: ${{ hashFiles('08-agents/KAIROS/schemas/frontmatter.schema.json') != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          SCHEMAS=(schemas/*.json 08-agents/KAIROS/schemas/*.json)
-          if [ ${#SCHEMAS[@]} -eq 0 ]; then
-            echo "No schema files found — skipping"
-            exit 0
-          fi
-          for f in "${SCHEMAS[@]}"; do
-            echo "Checking schema: $f"
-            python 08-agents/KAIROS/scripts/json_schema_check.py "$f"
-          done
+          python - <<'PY'
+          import json, jsonschema, sys
+          p = '08-agents/KAIROS/schemas/frontmatter.schema.json'
+          with open(p,'r',encoding='utf-8') as f:
+              schema = json.load(f)
+          jsonschema.Draft202012Validator.check_schema(schema)
+          print("schema OK:", p)
+          PY
 
-      - name: Frontmatter / fixtures validate (if present)
+      # Проверка фикстур фронтматтера через наш скрипт (если фикстуры есть)
+      - name: Fixture validate (frontmatter, if present)
+        if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' || hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/bad/*.json') != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f pipelines/fm_validate.py ]; then
-            python pipelines/fm_validate.py
-          else
-            echo "pipelines/fm_validate.py not found — skipping"
-          fi
+          python 08-agents/KAIROS/scripts/nr_fm.py \
+            --schema 08-agents/KAIROS/schemas/frontmatter.schema.json \
+            --base   08-agents/KAIROS/tests/fixtures/frontmatter
 
+      # Если имеется pipelines/fm_validate.py — запустим как интеграционный чекап
+      - name: fm_validate pipeline (if present)
+        if: ${{ hashFiles('pipelines/fm_validate.py') != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python pipelines/fm_validate.py
+
+      # Если в Makefile есть цель ci-validate — прогоняем её
       - name: Make ci-validate (if present)
         shell: bash
         run: |
           set -euo pipefail
           if [ -f 08-agents/KAIROS/Makefile ]; then
-            make -C 08-agents/KAIROS ci-validate || echo "no ci-validate target — skipping"
+            if grep -qE '^\s*ci-validate\s*:' 08-agents/KAIROS/Makefile; then
+              make -C 08-agents/KAIROS ci-validate
+            else
+              echo "No 'ci-validate' target — skipping."
+            fi
           else
-            echo "Makefile not found — skipping"
+            echo "Makefile not found — skipping."
           fi
