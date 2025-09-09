@@ -1,0 +1,14 @@
+{
+  "id": "KAIROS_FM_Policy",
+  "project": "NeuroReturn",
+  "title": "Frontmatter Policy (Canon)",
+  "version": "0.3.0",
+  "category": "policy",
+  "type": "policy",
+  "phase": "F0",
+  "status": "canon",
+  "confidentiality": "internal",
+  "source": "decision",
+  "created_at": "2025-09-10",
+  "description": "Канонический пример корректного фронтматтера под схему."
+}
