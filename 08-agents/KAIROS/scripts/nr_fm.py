@@ -7,7 +7,7 @@ nr_fm.py — валидатор фронтматтера (JSON Schema).
   --base <dir>   : пакетная проверка good/ и bad/
   --file <file>  : проверка одного файла
 
-Дополнительно:
+Опции:
   --output {text,json,md}  : формат stdout (по умолчанию text)
   --summary <path>         : запись JSON-сводки (всегда JSON)
   --gh-summary             : пишет Markdown в $GITHUB_STEP_SUMMARY
@@ -17,12 +17,14 @@ nr_fm.py — валидатор фронтматтера (JSON Schema).
   1 — отклонения (good не прошёл или bad «вдруг прошёл»)
   2 — ошибка использования/IO/схемы
 """
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 from jsonschema import Draft202012Validator, ValidationError
 
@@ -40,7 +42,7 @@ def validate_instance(
         validator.validate(instance)
         return True, ""
     except ValidationError as e:
-        loc = "/".join([str(p) for p in e.path]) or "(root)"
+        loc = "/".join(map(str, e.path)) or "(root)"
         msg = f"{e.message} [at: {loc}; validator: {e.validator}]"
         return False, msg
 
@@ -48,33 +50,20 @@ def validate_instance(
 def collect_files(base: Path) -> Tuple[List[Path], List[Path]]:
     good_dir = base / "good"
     bad_dir = base / "bad"
-    good = (
-        sorted([p for p in good_dir.glob("*.json") if p.is_file()])
-        if good_dir.exists()
-        else []
-    )
-    bad = (
-        sorted([p for p in bad_dir.glob("*.json") if p.is_file()])
-        if bad_dir.exists()
-        else []
-    )
+    good = sorted(p for p in good_dir.glob("*.json") if p.is_file()) if good_dir.exists() else []
+    bad  = sorted(p for p in bad_dir.glob("*.json")  if p.is_file()) if bad_dir.exists()  else []
     return good, bad
 
 
-def make_summary(schema: Path, base: Path, results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    # аккуратно считаем показатели; НИКАКИХ "=" в условиях, только "=="
-    good_total = sum(1 for r in results if r["group"] == "good")
-    bad_total = sum(1 for r in results if r["group"] == "bad")
+def make_summary(schema: Path, base: Path | None, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    good_total = sum(1 for r in results if r.get("group") == "good")
+    bad_total  = sum(1 for r in results if r.get("group") == "bad")
 
-    good_pass = sum(1 for r in results if r["group"] == "good" and r["status"] == "pass")
-    good_fail = sum(1 for r in results if r["group"] == "good" and r["status"] == "fail")
+    good_pass = sum(1 for r in results if r.get("group") == "good" and r.get("status") == "pass")
+    good_fail = sum(1 for r in results if r.get("group") == "good" and r.get("status") == "fail")
 
-    bad_expected_fail = sum(
-        1 for r in results if r["group"] == "bad" and r["status"] == "expected_fail"
-    )
-    bad_unexpected_pass = sum(
-        1 for r in results if r["group"] == "bad" and r["status"] == "unexpected_pass"
-    )
+    bad_expected_fail   = sum(1 for r in results if r.get("group") == "bad" and r.get("status") == "expected_fail")
+    bad_unexpected_pass = sum(1 for r in results if r.get("group") == "bad" and r.get("status") == "unexpected_pass")
 
     return {
         "schema": str(schema),
@@ -93,11 +82,95 @@ def make_summary(schema: Path, base: Path, results: List[Dict[str, Any]]) -> Dic
 
 def emit_markdown(summary: Dict[str, Any]) -> str:
     c = summary["counts"]
-    lines = []
+    lines: List[str] = []
     lines.append("## Frontmatter validation summary")
     lines.append("")
     lines.append(f"- **Schema**: `{summary['schema']}`")
     if summary.get("base"):
         lines.append(f"- **Base**: `{summary['base']}`")
     lines.append("")
-    lines.append("| Group | File | St
+    lines.append("| Group | File | Status | Detail |")
+    lines.append("|---|---|---|---|")
+    for r in summary["files"]:
+        detail = (r.get("error") or "")
+        if len(detail) > 140:
+            detail = detail[:137] + "..."
+        lines.append(f"| {r.get('group')} | `{r.get('path')}` | {r.get('status')} | {detail} |")
+    lines.append("")
+    lines.append(
+        f"**Totals:** good {c['good_pass']}/{c['good_total']} pass; "
+        f"bad expected-fail {c['bad_expected_fail']}/{c['bad_total']}; "
+        f"bad unexpected-pass {c['bad_unexpected_pass']}"
+    )
+    return "\n".join(lines)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--schema", required=True, help="path to JSON Schema")
+    grp = ap.add_mutually_exclusive_group(required=True)
+    grp.add_argument("--base", help="base dir with good/ and bad/ subdirs")
+    grp.add_argument("--file", help="single JSON file to validate")
+    ap.add_argument("--output", choices=["text", "json", "md"], default="text")
+    ap.add_argument("--summary", help="path to write JSON summary file")
+    ap.add_argument("--gh-summary", action="store_true", help="write Markdown into $GITHUB_STEP_SUMMARY")
+    args = ap.parse_args()
+
+    schema_path = Path(args.schema)
+    if not schema_path.exists():
+        print(f"[ERROR] Schema not found: {schema_path}", file=sys.stderr)
+        return 2
+
+    schema = load_json(schema_path)
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema)
+
+    results: List[Dict[str, Any]] = []
+    exit_code = 0
+
+    if args.base:
+        base = Path(args.base)
+        good, bad = collect_files(base)
+
+        # good: должны проходить
+        for p in good:
+            ok, err = validate_instance(validator, p)
+            if ok:
+                print(f"[OK] {p}")
+                results.append({"path": str(p), "group": "good", "status": "pass"})
+            else:
+                print(f"[FAIL: expected pass] {p}\n{err}")
+                results.append({"path": str(p), "group": "good", "status": "fail", "error": err})
+                exit_code = 1
+
+        # bad: должны падать
+        for p in bad:
+            ok, err = validate_instance(validator, p)
+            if ok:
+                print(f"[FAIL: expected fail] {p} — validated but should fail")
+                results.append({"path": str(p), "group": "bad", "status": "unexpected_pass"})
+                exit_code = 1
+            else:
+                print(f"[OK] {p} (expected fail)")
+                results.append({"path": str(p), "group": "bad", "status": "expected_fail", "error": err})
+
+        summary = make_summary(schema_path, base, results)
+
+    else:
+        f = Path(args.file)
+        ok, err = validate_instance(validator, f)
+        if ok:
+            print(f"[OK] {f}")
+            results.append({"path": str(f), "group": "single", "status": "pass"})
+            summary = {"schema": str(schema_path), "file": str(f), "counts": {"pass": 1, "fail": 0}, "files": results}
+        else:
+            print(f"[FAIL] {f}\n{err}")
+            results.append({"path": str(f), "group": "single", "status": "fail", "error": err})
+            summary = {"schema": str(schema_path), "file": str(f), "counts": {"pass": 0, "fail": 1}, "files": results}
+            exit_code = 1
+
+    # JSON summary на диск (по запросу)
+    if args.summary:
+        out = Path(args.summary)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(su_
