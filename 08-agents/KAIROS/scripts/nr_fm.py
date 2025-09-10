@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-nr_fm.py — валидатор фронтматтера (JSON Schema) с режимами:
+nr_fm.py — валидатор фронтматтера (JSON Schema).
+
+Режимы:
   --base <dir>   : пакетная проверка good/ и bad/
   --file <file>  : проверка одного файла
+
 Дополнительно:
-  --output {text,json,md}  : формат основного вывода (по умолчанию text)
-  --summary <path>         : путь для записи JSON-сводки (всегда JSON)
-  --gh-summary             : если установлен, пишет Markdown в $GITHUB_STEP_SUMMARY
+  --output {text,json,md}  : формат stdout (по умолчанию text)
+  --summary <path>         : запись JSON-сводки (всегда JSON)
+  --gh-summary             : пишет Markdown в $GITHUB_STEP_SUMMARY
 
 Коды выхода:
   0 — все good прошли, все bad упали (как и должны)
-  1 — есть отклонения (good не прошёл или bad «вдруг прошёл»)
+  1 — отклонения (good не прошёл или bad «вдруг прошёл»)
   2 — ошибка использования/IO/схемы
 """
-
 import argparse
 import json
 import os
@@ -34,7 +36,6 @@ def validate_instance(validator: Draft202012Validator, instance_path: Path) -> T
         validator.validate(instance)
         return True, ""
     except ValidationError as e:
-        # компактное сообщение
         loc = "/".join([str(p) for p in e.path]) or "(root)"
         msg = f"{e.message} [at: {loc}; validator: {e.validator}]"
         return False, msg
@@ -74,7 +75,7 @@ def emit_markdown(summary: Dict[str, Any]) -> str:
     lines.append("## Frontmatter validation summary")
     lines.append("")
     lines.append(f"- **Schema**: `{summary['schema']}`")
-    if summary["base"]:
+    if summary.get("base"):
         lines.append(f"- **Base**: `{summary['base']}`")
     lines.append("")
     lines.append("| Group | File | Status | Detail |")
@@ -98,7 +99,7 @@ def main():
     group.add_argument("--file", help="single JSON file to validate")
     ap.add_argument("--output", choices=["text", "json", "md"], default="text")
     ap.add_argument("--summary", help="path to write JSON summary file")
-    ap.add_argument("--gh-summary", action="store_true", help="write Markdown into $GITHUB_STEP_SUMMARY if set")
+    ap.add_argument("--gh-summary", action="store_true", help="write Markdown into $GITHUB_STEP_SUMMARY")
     args = ap.parse_args()
 
     schema_path = Path(args.schema)
@@ -117,7 +118,6 @@ def main():
         base = Path(args.base)
         good, bad = collect_files(base)
 
-        # good: must pass
         for p in good:
             ok, err = validate_instance(validator, p)
             if ok:
@@ -128,7 +128,6 @@ def main():
                 results.append({"path": str(p), "group": "good", "status": "fail", "error": err})
                 exit_code = 1
 
-        # bad: must fail
         for p in bad:
             ok, err = validate_instance(validator, p)
             if ok:
@@ -148,37 +147,32 @@ def main():
             print(f"[OK] {f}")
             results.append({"path": str(f), "group": "single", "status": "pass"})
             summary = {
-                "schema": str(schema_path),
-                "file": str(f),
-                "counts": {"pass": 1, "fail": 0},
-                "files": results
+                "schema": str(schema_path), "file": str(f),
+                "counts": {"pass": 1, "fail": 0}, "files": results
             }
         else:
             print(f"[FAIL] {f}\n{err}")
             results.append({"path": str(f), "group": "single", "status": "fail", "error": err})
             summary = {
-                "schema": str(schema_path),
-                "file": str(f),
-                "counts": {"pass": 0, "fail": 1},
-                "files": results
+                "schema": str(schema_path), "file": str(f),
+                "counts": {"pass": 0, "fail": 1}, "files": results
             }
             exit_code = 1
 
-    # write summary file if requested
     if args.summary:
         out = Path(args.summary)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"[INFO] JSON summary written to: {out}")
 
-    # write GitHub Job Summary if requested
-    if args.gh_summary:
+    if args.gh-summary:
         gh_path = os.getenv("GITHUB_STEP_SUMMARY")
         if gh_path:
-            Path(gh_path).write_text(emit_markdown(summary) + "\n", encoding="utf-8")
-            print(f"[INFO] Markdown summary written to $GITHUB_STEP_SUMMARY")
+            # append, чтобы не затирать чужие записи
+            with open(gh_path, "a", encoding="utf-8") as f:
+                f.write(emit_markdown(summary) + "\n")
+            print(f"[INFO] Markdown summary written to $GITHUB_STEP_SUMMARY -> {gh_path}")
 
-    # main output format
     if args.output == "json":
         print(json.dumps(summary, ensure_ascii=False))
     elif args.output == "md":
