@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ci_spec_check.py — проверяет, что исполняемый GitHub Actions workflow соответствует контракту из spec.
-Использование (из корня репо):
+ci_spec_check.py — сверяет исполняемый workflow с контрактом из spec.
+Без внешних зависимостей (PyYAML не нужен).
+
+Usage (из корня репо):
   python 08-agents/KAIROS/scripts/ci_spec_check.py \
     --spec 08-agents/KAIROS/pipelines/validation_ci.spec.yaml \
     --workflow .github/workflows/kairos-ci.yml
-Код выхода: 0 — ок, 1 — нарушение контракта.
+
+Exit codes: 0 — OK, 1 — нарушения.
 """
 import argparse, sys, re
 from pathlib import Path
@@ -21,21 +24,67 @@ def parse_args():
     return ap.parse_args()
 
 def extract_contract(spec_text: str):
-    # Простейший парсер: ищем блоки id/must_contain
+    """
+    Мини-парсер YAML-лайк структуры:
+    - читаем только блок 'contract:' до любого другого верхнеуровневого ключа
+    - собираем элементы must_contain только внутри текущего id-блока
+    """
+    lines = spec_text.splitlines()
+    in_contract = False
     blocks = []
     current = None
-    for line in spec_text.splitlines():
-        if re.match(r"^\s*-\s+id:\s*", line):
-            if current: blocks.append(current)
-            current = {"id": line.split(":",1)[1].strip().strip('"')}
-        elif re.match(r"^\s*-\s+", line) and current is not None and "must_contain" in current:
-            current.setdefault("items", []).append(line.strip().lstrip("- ").strip().strip('"'))
-        elif "must_contain:" in line and current is not None:
-            current["must_contain"] = True
-            current["items"] = []
-    if current: blocks.append(current)
-    for b in blocks:
-        b["items"] = b.get("items", [])
+    collecting = False
+
+    for raw in lines:
+        line = raw.rstrip("\n")
+
+        # Входим в contract
+        if re.match(r"^\s*contract\s*:\s*$", line):
+            in_contract = True
+            current = None
+            collecting = False
+            continue
+
+        # Любой другой верхнеуровневый ключ завершает contract
+        if in_contract and re.match(r"^[A-Za-z0-9_]+\s*:\s*$", line):
+            # это новый ключ верхнего уровня (например version:, pipeline_name:)
+            # завершаем обработку contract
+            if current:
+                blocks.append(current)
+                current = None
+            in_contract = False
+            collecting = False
+            continue
+
+        if not in_contract:
+            continue
+
+        # Новый блок id
+        m_id = re.match(r"^\s*-\s+id:\s*(.+?)\s*$", line)
+        if m_id:
+            if current:
+                blocks.append(current)
+            current = {"id": m_id.group(1).strip().strip('"'), "items": []}
+            collecting = False
+            continue
+
+        # Старт списка must_contain
+        if current and re.match(r"^\s*must_contain\s*:\s*$", line):
+            collecting = True
+            continue
+
+        # Элементы must_contain
+        if current and collecting:
+            m_item = re.match(r"^\s*-\s+(.+?)\s*$", line)
+            if m_item:
+                item = m_item.group(1).strip().strip('"')
+                current["items"].append(item)
+                continue
+            # закончился список (следующая строка не начинается с "- ")
+            # не сбрасываем collecting насильно, но элементы уже не добавятся
+
+    if current:
+        blocks.append(current)
     return blocks
 
 def main():
