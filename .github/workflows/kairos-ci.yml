@@ -85,7 +85,6 @@ jobs:
         if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') == '' }}
         run: echo "No requirements.txt / pyproject.toml — skipping dependency install."
 
-      # Сверка спеки с реальным workflow
       - name: Spec vs workflow sync check
         shell: bash
         run: |
@@ -100,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import json, sys
+          import json
           from jsonschema import Draft202012Validator
           p = '08-agents/KAIROS/schemas/frontmatter.schema.json'
           with open(p, 'r', encoding='utf-8') as f:
@@ -109,14 +108,26 @@ jobs:
           print("schema OK:", p)
           PY
 
-      - name: Fixture validate (frontmatter, if present)
+      - name: Fixture validate (frontmatter, with summary)
         if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' || hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/bad/*.json') != '' }}
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p 08-agents/KAIROS/observability
           python 08-agents/KAIROS/scripts/nr_fm.py \
             --schema 08-agents/KAIROS/schemas/frontmatter.schema.json \
-            --base   08-agents/KAIROS/tests/fixtures/frontmatter
+            --base   08-agents/KAIROS/tests/fixtures/frontmatter \
+            --output json \
+            --summary 08-agents/KAIROS/observability/fm_summary.json \
+            --gh-summary
+
+      - name: Upload fm-summary artifact
+        if: ${{ hashFiles('08-agents/KAIROS/observability/fm_summary.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fm-summary
+          path: 08-agents/KAIROS/observability/fm_summary.json
+          if-no-files-found: error
 
       - name: Make ci-validate (if present)
         shell: bash
