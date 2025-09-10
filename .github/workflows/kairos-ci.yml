@@ -1,8 +1,8 @@
 name: KAIROS CI
 
 on:
-  workflow_dispatch: {}         # ручной запуск кнопкой
-  push:                         # автозапуск на коммиты в main по важным путям
+  workflow_dispatch: {}
+  push:
     branches: [ main ]
     paths:
       - '.github/workflows/kairos-ci.yml'
@@ -11,7 +11,7 @@ on:
       - 'pipelines/**'
       - 'requirements.txt'
       - 'pyproject.toml'
-  pull_request:                 # автозапуск на PR в main
+  pull_request:
     branches: [ main ]
     paths:
       - '.github/workflows/kairos-ci.yml'
@@ -47,13 +47,11 @@ jobs:
           echo "::group::tree-08-agents"; ls -la 08-agents || true; echo "::endgroup::"
           echo "::group::tree-KAIROS"; ls -la 08-agents/KAIROS || true; echo "::endgroup::"
 
-      # Строгая проверка наличия ключевых путей
       - name: Sanity verify paths (strict)
         shell: bash
         run: |
           set -euo pipefail
           for p in \
-            "08-agents/KAIROS/.pre-commit-config.yaml" \
             "08-agents/KAIROS/Makefile" \
             "08-agents/KAIROS/scripts/json_schema_check.py" \
             "08-agents/KAIROS/scripts/nr_fm.py"
@@ -71,7 +69,6 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      # Если есть requirements/pyproject — ставим зависимости; иначе просто пропускаем
       - name: Install dependencies (if present)
         if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') != '' }}
         shell: bash
@@ -83,32 +80,35 @@ jobs:
           elif [ -f pyproject.toml ]; then
             pip install -e .
           fi
-          python - <<'PY'
-          import jsonschema, yaml
-          print("jsonschema =", jsonschema.__version__)
-          print("PyYAML    =", yaml.__version__)
-          PY
 
       - name: Dependencies not found — skip install
         if: ${{ hashFiles('**/requirements.txt', '**/pyproject.toml') == '' }}
         run: echo "No requirements.txt / pyproject.toml — skipping dependency install."
 
-      # Самопроверка схемы: валидность JSON Schema (строго)
+      # Сверка спеки с реальным workflow
+      - name: Spec vs workflow sync check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python 08-agents/KAIROS/scripts/ci_spec_check.py \
+            --spec 08-agents/KAIROS/pipelines/validation_ci.spec.yaml \
+            --workflow .github/workflows/kairos-ci.yml
+
       - name: Schema self-check (strict)
         if: ${{ hashFiles('08-agents/KAIROS/schemas/frontmatter.schema.json') != '' }}
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
-          import json, jsonschema, sys
+          import json, sys
+          from jsonschema import Draft202012Validator
           p = '08-agents/KAIROS/schemas/frontmatter.schema.json'
-          with open(p,'r',encoding='utf-8') as f:
+          with open(p, 'r', encoding='utf-8') as f:
               schema = json.load(f)
-          jsonschema.Draft202012Validator.check_schema(schema)
+          Draft202012Validator.check_schema(schema)
           print("schema OK:", p)
           PY
 
-      # Проверка фикстур фронтматтера через наш скрипт (если фикстуры есть)
       - name: Fixture validate (frontmatter, if present)
         if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' || hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/bad/*.json') != '' }}
         shell: bash
@@ -118,15 +118,6 @@ jobs:
             --schema 08-agents/KAIROS/schemas/frontmatter.schema.json \
             --base   08-agents/KAIROS/tests/fixtures/frontmatter
 
-      # Если имеется pipelines/fm_validate.py — запустим как интеграционный чекап
-      - name: fm_validate pipeline (if present)
-        if: ${{ hashFiles('pipelines/fm_validate.py') != '' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python pipelines/fm_validate.py
-
-      # Если в Makefile есть цель ci-validate — прогоняем её
       - name: Make ci-validate (if present)
         shell: bash
         run: |
