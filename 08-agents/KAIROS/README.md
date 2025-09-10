@@ -12,7 +12,6 @@ repo_root: 08-agents/KAIROS/
 ---
 
 ## 1) Контур и артефакты (минимум)
-
 08-agents/KAIROS/
 ├─ schemas/
 │ └─ frontmatter.schema.json
@@ -35,16 +34,17 @@ repo_root: 08-agents/KAIROS/
 │ └─ fm_bad_date.json
 └─ Makefile
 
----
+markdown
+Копировать код
 
 ## 2) CI (источник истины)
 Исполняемый workflow: `.github/workflows/kairos-ci.yml`  
 Проверяет:
-- **Sanity verify paths** — ключевые пути существуют
-- **Spec vs workflow sync check** — сверка с `pipelines/validation_ci.spec.yaml`
-- **Schema self-check** — валидность `schemas/frontmatter.schema.json`
-- **Fixture validate** — пакетная проверка `good/*.json` и `bad/*.json`
-- **Make ci-validate** — `schema.check` + `fm.validate`
+- **Sanity verify paths** — ключевые пути существуют.
+- **Spec vs workflow sync check** — сверка с `08-agents/KAIROS/pipelines/validation_ci.spec.yaml`.
+- **Schema self-check** — валидность `schemas/frontmatter.schema.json`.
+- **Fixture validate** — пакетная проверка `good/*.json` и `bad/*.json`.
+- **Make ci-validate** — `schema.check` + `fm.validate`.
 
 ## 3) Локальная валидация (не обязательна)
 ```bash
@@ -62,11 +62,7 @@ python 08-agents/KAIROS/scripts/nr_fm.py \
 
 # Makefile (если установлен make)
 make -C 08-agents/KAIROS ci-validate
-
----
-
 4) Политика именования ID
-
 Допустимые форматы:
 
 NR_001_Name-Of-Thing
@@ -78,7 +74,6 @@ KAIROS_Name-Of-Thing (после KAIROS_ только [A-Za-z0-9-])
 Пример канона: KAIROS_FM-Policy.
 
 5) Acceptance
-
 Все tests/fixtures/frontmatter/good/*.json проходят схему.
 
 Все tests/fixtures/frontmatter/bad/*.json падают по схеме (и считаются OK).
@@ -86,7 +81,16 @@ KAIROS_Name-Of-Thing (после KAIROS_ только [A-Za-z0-9-])
 KAIROS CI зелёный обязателен для merge в main.
 
 6) Релизы
-
 v0.3.0 — базовый CI, фронтматтер-схема, фикстуры, спека CI, Makefile.
 
-v0.4.0 (план) — отчёт валидатора как artifact, автогенерация шаблонов фронтматтера, PR-template и CODEOWNERS (если ещё не добавлены).
+v0.4.0 (план) — отчёт валидатора как artifact, автогенерация шаблонов фронтматтера, PR-template и CODEOWNERS.
+
+yaml
+Копировать код
+
+---
+
+# Слой 2 — Пояснение
+Твои текущие проблемы были сугубо технические: незакрытый ```bash-блок «съедал» пол-README, заголовки «4)…6)» выпадали из структуры, а дерево каталогов без кода выглядело как случайный текст. Исправленная версия закрывает блоки, нормализует пути и фиксирует ссылку на спека-файл именно с полным префиксом. Теперь это читаемо человеком и предсказуемо для новых контрибьюторов. :contentReference[oaicite:1]{index=1}
+
+Запихни файл как есть и жми ран. Если зелёный, идём к v0.4.0: отчёт валидатора как artifact и автогенерация шаблонов фронтматтера.
