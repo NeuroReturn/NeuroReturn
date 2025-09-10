@@ -33,6 +33,7 @@
 
 ## Сверка спеки и workflow
 Спека пайплайна: `08-agents/KAIROS/pipelines/validation_ci.spec.yaml`.  
+
 В ранe запускается шаг `Spec vs workflow sync check`, предотвращающий расхождение спеки и workflow.
 
 ## Локальная валидация (опционально)
