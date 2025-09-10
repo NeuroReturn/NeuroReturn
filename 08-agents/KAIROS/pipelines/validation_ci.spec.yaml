@@ -1,6 +1,5 @@
 # KAIROS CI · Spec (non-executable)
-# Этот файл не запускается GitHub Actions. Это контракт того, что должен делать .github/workflows/kairos-ci.yml
-
+# Контракт того, что должен делать .github/workflows/kairos-ci.yml
 version: 1
 pipeline_name: "KAIROS CI"
 
@@ -13,7 +12,7 @@ contract:
 
   - id: "Schema self-check (strict)"
     must_contain:
-      - "jsonschema.Draft202012Validator.check_schema"
+      - "Draft202012Validator.check_schema"
       - "08-agents/KAIROS/schemas/frontmatter.schema.json"
 
   - id: "Fixture validate (frontmatter, if present)"
@@ -25,7 +24,3 @@ contract:
   - id: "Make ci-validate (if present)"
     must_contain:
       - "make -C 08-agents/KAIROS ci-validate"
-
-notes:
-  - "Любые правки workflow сначала отражаем в этой спека, затем меняем .github/workflows/kairos-ci.yml"
-  - "CI уронит ран, если спека и workflow разойдутся"
