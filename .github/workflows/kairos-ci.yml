@@ -120,14 +120,18 @@ jobs:
             --output json \
             --summary 08-agents/KAIROS/observability/fm_summary.json \
             --gh-summary
+          echo "---- summary file ----"
+          ls -lh 08-agents/KAIROS/observability || true
+          echo "---- job summary echo ----" >> "$GITHUB_STEP_SUMMARY"
+          echo "JSON summary path: 08-agents/KAIROS/observability/fm_summary.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload fm-summary artifact
-        if: ${{ hashFiles('08-agents/KAIROS/observability/fm_summary.json') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: fm-summary
           path: 08-agents/KAIROS/observability/fm_summary.json
           if-no-files-found: error
+          retention-days: 7
 
       - name: Make ci-validate (if present)
         shell: bash
