@@ -24,9 +24,11 @@ on:
 permissions:
   contents: read
 
+# Важно: группа зависит от ветки И типа события,
+# отмену параллельных запусков отключаем, чтобы ручной ран не убивался.
 concurrency:
-  group: kairos-ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: kairos-ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: false
 
 jobs:
   kairos:
@@ -109,7 +111,6 @@ jobs:
           PY
 
       - name: Fixture validate (frontmatter, with summary)
-        # запускаем только если есть что проверять
         if: ${{ hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/good/*.json') != '' || hashFiles('08-agents/KAIROS/tests/fixtures/frontmatter/bad/*.json') != '' }}
         shell: bash
         run: |
